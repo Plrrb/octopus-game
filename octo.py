@@ -250,7 +250,7 @@ class Octopus_Game(arcade.View):
         self.player_list = arcade.SpriteList()
         self.wall_list = arcade.SpriteList()
         self.coin_list = arcade.SpriteList()
-        self.load_map("map.txt")
+        self.load_map("octopus-game/map.txt")
 
         # add the floor
         wall = arcade.Sprite(":resources:images/tiles/grassMid.png", TILE_SCALING)
