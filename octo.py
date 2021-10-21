@@ -1,14 +1,3 @@
-"""
-Starting Template
-
-Once you have learned how to use classes, you can begin your program with this
-template.
-
-If Python and Arcade are installed, this example can be run from the command line with:
-python -m arcade.examples.starting_template
-"""
-
-
 import arcade
 import arcade.gui
 
@@ -32,76 +21,86 @@ UPDATES_PER_FRAME = 2
 
 
 class Start_Screen(arcade.View):
-    def __init__(self, display_width, display_height):
+    def __init__(self, my_window, display_width, display_height):
         super().__init__()
         self.display_width = display_width
         self.display_height = display_height
+        self.window = my_window
 
         self.buttons = []
         self.make_buttons()
 
     def on_draw(self):
-        for button in self.buttons:
-            button.draw()
+        self.ui_manager.draw()
+
+    def choose_characters(self, character):
+        octopus_game = Octopus_Game(self.display_width, self.display_height, character)
+        octopus_game.setup()
+        self.window.show_view(octopus_game)
 
     def make_buttons(self):
-        width = 150
-        height = 150
+        self.ui_manager = arcade.gui.UIManager(self.window)
 
-        idle_chars = [
-            arcade.load_texture(f"{CHARACTERS[key]}/{key}_idle.png")
-            for key in CHARACTERS
-        ]
+        box = arcade.gui.UIBoxLayout(vertical=False)
 
-        start = (self.display_width / 2) - (width * 3)
+        for key in CHARACTERS:
+            t = arcade.load_texture(f"{CHARACTERS[key]}/{key}_idle.png")
+            b = arcade.gui.UITextureButton(texture=t)
+            b.on_click = lambda *x, key=key: self.choose_characters(key)
+            box.add(b)
 
-        # draw row
-        rows = (len(CHARACTERS) // 6) + 1
+        self.ui_manager.add(arcade.gui.UIAnchorWidget(child=box))
 
-        counter = len(CHARACTERS)
-        for j in range(rows):
-            if counter >= 6:
-                range_num = 6
-            else:
-                range_num = counter % 6
+        # width = 150
+        # height = 150
 
-            for i in range(range_num):
-                x = (start + i * width) + width / 2
-                y = self.display_height - (height * j) - 200
-                # arcade.draw_rectangle_outline(
-                #     x,
-                #     y,
-                #     width,
-                #     height,
-                #     arcade.color.RED,
-                # )
-                # arcade.draw_scaled_texture_rectangle(x, y, idle_chars[i])
-                button = arcade.gui.UITextureButton(x, y, width, height, idle_chars[i])
-                button.on_click(lambda: self.start_game(idle_chars[i]))
+        # idle_chars = [
+        #     arcade.load_texture(f"{CHARACTERS[key]}/{key}_idle.png")
+        #     for key in CHARACTERS
+        # ]
 
-                self.buttons.append(button)
+        # start = (self.display_width / 2) - (width * 3)
 
-            counter -= 6
+        # # draw row
+        # rows = (len(CHARACTERS) // 6) + 1
+
+        # counter = len(CHARACTERS)
+        # for j in range(rows):
+        #     if counter >= 6:
+        #         range_num = 6
+        #     else:
+        #         range_num = counter % 6
+
+        #     for i in range(range_num):
+        #         x = (start + i * width) + width / 2
+        #         y = self.display_height - (height * j) - 200
+        #         # arcade.draw_rectangle_outline(
+        #         #     x,
+        #         #     y,
+        #         #     width,
+        #         #     height,
+        #         #     arcade.color.RED,
+        #         # )
+        #         # arcade.draw_scaled_texture_rectangle(x, y, idle_chars[i])
+        #         button = arcade.gui.UITextureButton(x, y, width, height, idle_chars[i])
+        #         button.on_click(lambda: self.start_game(idle_chars[i]))
+
+        #         self.buttons.append(button)
+
+        #     counter -= 6
 
     def setup(self):
         """This should set up your game and get it ready to play"""
         # Replace 'pass' with the code to set up your game
         pass
 
-    def on_show(self):
+    def on_show_view(self):
         """Called when switching to this view"""
         arcade.set_background_color(arcade.color.ORANGE_PEEL)
+        self.ui_manager.enable()
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
         pass
-
-    def start_game(self, player_image):
-
-        octopus_game = Octopus_Game(
-            self.display_width, self.display_height, player_image
-        )
-        octopus_game.setup()
-        self.window.show_view(octopus_game)
 
 
 def load_texture_pair(filename):
@@ -129,6 +128,7 @@ class Coin(arcade.Sprite):
 
 class Player(arcade.Sprite):
     def __init__(self, x, y, w, h, character):
+        print(character)
         url = f"{CHARACTERS[character]}/{character}_"
         super().__init__(url + "idle.png")
 
@@ -264,7 +264,10 @@ class Octopus_Game(arcade.View):
             50, 50, self.sprite_width, self.sprite_height, self.character
         )
 
+        print("before adding player to list")
+        print(self.player)
         self.player_list.append(self.player)
+        print("after adding player to list")
 
         self.sprite_width = None
         self.sprite_height = None
@@ -403,7 +406,7 @@ def main():
     display_height = int(display_height * 0.8)
 
     window = arcade.Window(display_width, display_height, "Octopus Game")
-    start_screen = Start_Screen(display_width, display_height)
+    start_screen = Start_Screen(window, display_width, display_height)
     start_screen.setup()
 
     window.show_view(start_screen)
