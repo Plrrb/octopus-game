@@ -99,8 +99,10 @@ class Start_Screen(arcade.View):
         arcade.set_background_color(arcade.color.ORANGE_PEEL)
         self.ui_manager.enable()
 
-    def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
-        pass
+    def on_hide_view(self):
+        # This unregisters the manager's UI handlers,
+        # Handlers respond to GUI button clicks, etc.
+        self.ui_manager.disable()
 
 
 def load_texture_pair(filename):
