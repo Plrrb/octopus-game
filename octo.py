@@ -132,7 +132,7 @@ class Player(arcade.Sprite):
         url = f"{CHARACTERS[character]}/{character}_"
         super().__init__(url + "idle.png")
 
-        self.textures = {
+        self.textures_dict = {
             "idle": arcade.load_texture(url + "idle.png"),
             "jump_right": arcade.load_texture(url + "jump.png"),
             "jump_left": arcade.load_texture(
@@ -144,7 +144,7 @@ class Player(arcade.Sprite):
             "fall_right": arcade.load_texture(url + "fall.png"),
         }
 
-        self.texture = self.textures["idle"]
+        self.texture = self.textures_dict["idle"]
 
         self.width = w * 3
         self.height = h * 3
@@ -175,13 +175,13 @@ class Player(arcade.Sprite):
         super().update()
 
         if self.change_y <= -1:
-            self.texture = self.textures["fall_" + self.direction]
+            self.texture = self.textures_dict["fall_" + self.direction]
 
         elif self.change_y >= 1:
-            self.texture = self.textures["jump_" + self.direction]
+            self.texture = self.textures_dict["jump_" + self.direction]
 
         elif self.change_y == 0:
-            self.texture = self.textures["idle"]
+            self.texture = self.textures_dict["idle"]
 
     def update_animation(self, delta_time: float):
 
@@ -216,7 +216,7 @@ class Player(arcade.Sprite):
 
     def jump(self, can_jump=True):
         if can_jump:
-            self.texture = self.textures["jump_" + self.direction]
+            self.texture = self.textures_dict["jump_" + self.direction]
 
             arcade.play_sound(self.jump_sound)
             self.change_y = self.jump_speed
@@ -409,6 +409,8 @@ def main():
     start_screen = Start_Screen(window, display_width, display_height)
     start_screen.setup()
 
+    # game = Octopus_Game(display_width, display_height, "maleAdventurer")
+    # game.setup()
     window.show_view(start_screen)
 
     arcade.run()
