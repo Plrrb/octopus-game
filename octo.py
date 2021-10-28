@@ -264,6 +264,10 @@ class Octopus_Game(arcade.View):
         self.coin_list = arcade.SpriteList()
         self.load_map("./map.txt")
 
+        self.player2 = arcade.Sprite(
+            ":resources:images/animated_characters/zombie/zombie_idle.png"
+        )
+
         # add the floor
         wall = arcade.Sprite(":resources:images/tiles/grassMid.png", TILE_SCALING)
         wall.width = self.display_width
@@ -348,13 +352,28 @@ class Octopus_Game(arcade.View):
             coin.effect(self.player)
             coin.remove_from_sprite_lists()
 
+    def send_our_pos(self):
         self.socket.send(self.player.get_formatted_pos().encode("ascii"))
 
     def recv_info(self):
-        while True:
-            data = self.socket.recv(1024)
-            data = data.decode("ascii")
-            print(data)
+        try:
+            while True:
+                player_pos = self.socket.recv(1024)
+                player_pos = player_pos.decode("ascii")
+
+                player_pos = eval(player_pos)
+
+                self.player2.center_x, self.player2.center_y = player_pos
+                self.send_our_pos()
+        except ConnectionResetError:
+            print("Other Player has left")
+            self.leave()
+            return
+
+    def leave(self):
+        print("Exiting...")
+        self.client_socket.close()
+        arcade.exit()
 
     def on_key_press(self, key, key_modifiers):
         self.keys_pressed[key] = True
@@ -423,8 +442,8 @@ def main():
     """Main method"""
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # 162.196.90.150
-    player2_ip = "192.168.56.1"  # sys.argv[1]
+    # 192.168.56.1
+    player2_ip = "162.196.90.150"  # sys.argv[1]
     # local ip for local connections
     print(socket.gethostbyname(socket.gethostname()))
 
