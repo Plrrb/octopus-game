@@ -1,5 +1,6 @@
 import threading
 import socket
+import time
 
 
 class Server:
@@ -7,7 +8,7 @@ class Server:
         self.connections = []
         self.socket = socket
 
-        t = threading.Thread(target=self.listen_for_clients)
+        t = threading.Thread(target=self.listen_for_clients, daemon=True)
         t.start()
 
     def listen_for_clients(self):
@@ -15,7 +16,7 @@ class Server:
             conn, addr = self.socket.accept()
             print(addr)
             self.connections.append(conn)
-            t = threading.Thread(target=self.threaded_client, args=(conn,))
+            t = threading.Thread(target=self.threaded_client, args=(conn,), daemon=True)
             t.start()
 
     def send_to_other_clients(self, data, excluded_client):
@@ -28,7 +29,7 @@ class Server:
     def threaded_client(self, conn):
         while True:
             data = conn.recv(1024)
-            # data = data.decode("ascii")
+            print(data.decode("ascii"))
             self.send_to_other_clients(data, conn)
 
 
@@ -40,6 +41,9 @@ def main():
     server = Server(s)
     print(socket.gethostbyname(socket.gethostname()))
     # server.listen_for_clients()
+
+    while True:
+        time.sleep(10)
 
 
 if __name__ == "__main__":

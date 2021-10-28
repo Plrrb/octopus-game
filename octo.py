@@ -262,7 +262,7 @@ class Octopus_Game(arcade.View):
         self.player_list = arcade.SpriteList()
         self.wall_list = arcade.SpriteList()
         self.coin_list = arcade.SpriteList()
-        self.load_map("octopus-game/map.txt")
+        self.load_map("./map.txt")
 
         # add the floor
         wall = arcade.Sprite(":resources:images/tiles/grassMid.png", TILE_SCALING)
@@ -423,7 +423,8 @@ def main():
     """Main method"""
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    player2_ip = "162.196.90.150"  # sys.argv[1]
+    # 162.196.90.150
+    player2_ip = "192.168.56.1"  # sys.argv[1]
     # local ip for local connections
     print(socket.gethostbyname(socket.gethostname()))
 
