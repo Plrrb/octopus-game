@@ -1,6 +1,7 @@
+import threading
 import arcade
 import arcade.gui
-
+import socket
 
 TILE_SCALING = 1
 SPRITE_SCALING = 1
@@ -21,11 +22,13 @@ UPDATES_PER_FRAME = 2
 
 
 class Start_Screen(arcade.View):
-    def __init__(self, my_window, display_width, display_height):
+    def __init__(self, my_window, display_width, display_height, client_socket):
         super().__init__()
         self.display_width = display_width
         self.display_height = display_height
         self.window = my_window
+
+        self.socket = client_socket
 
         self.buttons = []
         self.make_buttons()
@@ -34,7 +37,9 @@ class Start_Screen(arcade.View):
         self.ui_manager.draw()
 
     def choose_characters(self, character):
-        octopus_game = Octopus_Game(self.display_width, self.display_height, character)
+        octopus_game = Octopus_Game(
+            self.display_width, self.display_height, character, self.socket
+        )
         octopus_game.setup()
         self.window.show_view(octopus_game)
 
@@ -198,6 +203,9 @@ class Player(arcade.Sprite):
             direction = self.direction
             self.texture = self.walk_textures[frame][direction]
 
+    def get_formatted_pos(self):
+        return f"({self.center_x}, {self.center_y})"
+
     def get_coins(self):
         return self.coins
 
@@ -233,12 +241,14 @@ class Octopus_Game(arcade.View):
     with your own code. Don't leave 'pass' in this program.
     """
 
-    def __init__(self, display_width, display_height, character):
+    def __init__(self, display_width, display_height, character, socket):
         super().__init__()
 
         arcade.set_background_color(arcade.color.AMAZON)
         self.display_width = display_width
         self.display_height = display_height
+
+        self.socket = socket
 
         self.player_list = None
         self.wall_list = None
@@ -266,10 +276,7 @@ class Octopus_Game(arcade.View):
             50, 50, self.sprite_width, self.sprite_height, self.character
         )
 
-        print("before adding player to list")
-        print(self.player)
         self.player_list.append(self.player)
-        print("after adding player to list")
 
         self.sprite_width = None
         self.sprite_height = None
@@ -283,6 +290,9 @@ class Octopus_Game(arcade.View):
         self.physics_engine = arcade.PhysicsEnginePlatformer(
             self.player, self.wall_list, GRAVITY
         )
+
+        t = threading.Thread(target=self.recv_info, daemon=True)
+        t.start()
 
     def on_draw(self):
         """
@@ -337,6 +347,14 @@ class Octopus_Game(arcade.View):
         for coin in coins_hit_list:
             coin.effect(self.player)
             coin.remove_from_sprite_lists()
+
+        self.socket.send(self.player.get_formatted_pos().encode("ascii"))
+
+    def recv_info(self):
+        while True:
+            data = self.socket.recv(1024)
+            data = data.decode("ascii")
+            print(data)
 
     def on_key_press(self, key, key_modifiers):
         self.keys_pressed[key] = True
@@ -403,16 +421,25 @@ class Octopus_Game(arcade.View):
 
 def main():
     """Main method"""
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    player2_ip = "162.196.90.150"  # sys.argv[1]
+
+    print("Trying to connect...")
+    client_socket.connect((player2_ip, 5555))
+    print("Connected!")
+
     display_width, display_height = arcade.window_commands.get_display_size()
     display_width = int(display_width * 0.8)
     display_height = int(display_height * 0.8)
 
     window = arcade.Window(display_width, display_height, "Octopus Game")
-    start_screen = Start_Screen(window, display_width, display_height)
-    start_screen.setup()
 
     # game = Octopus_Game(display_width, display_height, "maleAdventurer")
     # game.setup()
+
+    start_screen = Start_Screen(window, display_width, display_height, client_socket)
+    start_screen.setup()
     window.show_view(start_screen)
 
     arcade.run()
