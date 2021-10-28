@@ -19,7 +19,7 @@ class Server:
             t.start()
 
     def send_to_other_clients(self, data, excluded_client):
-        data = data.encode("ascii")
+        # data = data.encode("ascii")
 
         for client in self.connections:
             if client is not excluded_client:
@@ -28,6 +28,7 @@ class Server:
     def threaded_client(self, conn):
         while True:
             data = conn.recv(1024)
+            # data = data.decode("ascii")
             self.send_to_other_clients(data, conn)
 
 
