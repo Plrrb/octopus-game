@@ -34,6 +34,7 @@ def main():
     s.listen()
 
     server = Server(s)
+    print(socket.gethostbyname(socket.gethostname()))
     server.listen_for_clients()
 
 

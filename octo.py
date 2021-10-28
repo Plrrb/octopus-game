@@ -424,6 +424,8 @@ def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     player2_ip = "162.196.90.150"  # sys.argv[1]
+    # local ip for local connections
+    print(socket.gethostbyname(socket.gethostname()))
 
     print("Trying to connect...")
     client_socket.connect((player2_ip, 5555))
