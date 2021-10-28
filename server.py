@@ -7,6 +7,9 @@ class Server:
         self.connections = []
         self.socket = socket
 
+        t = threading.Thread(target=self.listen_for_clients)
+        t.start()
+
     def listen_for_clients(self):
         while True:
             conn, addr = self.socket.accept()
@@ -35,7 +38,7 @@ def main():
 
     server = Server(s)
     print(socket.gethostbyname(socket.gethostname()))
-    server.listen_for_clients()
+    # server.listen_for_clients()
 
 
 if __name__ == "__main__":
