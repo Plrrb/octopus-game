@@ -27,6 +27,13 @@ class Server:
                 client.send(data)
 
     def threaded_client(self, conn):
+
+        character = conn.recv(1024)
+        self.send_to_other_clients(character, conn)
+        print(character.decode("ascii"))
+
+        time.sleep(5)
+
         conn.send("(0, 0)".encode("ascii"))
 
         while True:

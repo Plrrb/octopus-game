@@ -5,6 +5,8 @@ import socket
 
 import sys
 
+from pyglet.media import player
+
 TILE_SCALING = 1
 SPRITE_SCALING = 1
 SCREEN_TITLE = "Platformer"
@@ -39,6 +41,8 @@ class Start_Screen(arcade.View):
         self.ui_manager.draw()
 
     def choose_characters(self, character):
+        self.socket.send(character.encode("ascii"))
+
         octopus_game = Octopus_Game(
             self.display_width, self.display_height, character, self.socket
         )
@@ -266,9 +270,10 @@ class Octopus_Game(arcade.View):
         self.coin_list = arcade.SpriteList()
         self.load_map("./map.txt")
 
-        self.player2 = arcade.Sprite(
-            ":resources:images/animated_characters/zombie/zombie_idle.png"
-        )
+        char = self.socket.recv(1024)
+        char = char.decode("ascii")
+
+        self.player2 = Player(0, 0, self.sprite_width, self.sprite_height, char)
 
         # add the floor
         wall = arcade.Sprite(":resources:images/tiles/grassMid.png", TILE_SCALING)
@@ -362,6 +367,7 @@ class Octopus_Game(arcade.View):
             while True:
                 player_pos = self.socket.recv(1024)
                 player_pos = player_pos.decode("ascii")
+                print(player_pos)
 
                 player_pos = eval(player_pos)
 
