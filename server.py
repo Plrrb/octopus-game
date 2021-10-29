@@ -23,16 +23,16 @@ class Server:
         # data = data.encode("ascii")
 
         for client in self.connections:
-            if client is not excluded_client:
+            if not (client is excluded_client):
                 client.send(data)
 
     def threaded_client(self, conn):
 
         character = conn.recv(1024)
+        time.sleep(10)
+
         self.send_to_other_clients(character, conn)
         print(character.decode("ascii"))
-
-        time.sleep(5)
 
         conn.send("(0, 0)".encode("ascii"))
 

@@ -5,7 +5,6 @@ import socket
 
 import sys
 
-from pyglet.media import player
 
 TILE_SCALING = 1
 SPRITE_SCALING = 1
@@ -20,6 +19,8 @@ CHARACTERS = {
     "robot": ":resources:images/animated_characters/robot",
     "zombie": ":resources:images/animated_characters/zombie",
 }
+
+CHARACTER_NAMES = [key for key in CHARACTERS]
 
 MOVEMENT_SPEED = 5
 UPDATES_PER_FRAME = 2
@@ -54,10 +55,10 @@ class Start_Screen(arcade.View):
 
         box = arcade.gui.UIBoxLayout(vertical=False)
 
-        for key in CHARACTERS:
-            t = arcade.load_texture(f"{CHARACTERS[key]}/{key}_idle.png")
+        for i in CHARACTER_NAMES:
+            t = arcade.load_texture(f"{CHARACTERS[i]}/{i}_idle.png")
             b = arcade.gui.UITextureButton(texture=t)
-            b.on_click = lambda *x, key=key: self.choose_characters(key)
+            b.on_click = lambda *x, key=i: self.choose_characters(key)
             box.add(b)
 
         self.ui_manager.add(arcade.gui.UIAnchorWidget(child=box))
@@ -140,7 +141,10 @@ class Coin(arcade.Sprite):
 
 
 class Player(arcade.Sprite):
-    def __init__(self, x, y, w, h, character):
+    def __init__(self, x, y, w, h, index):
+
+        character = CHARACTERS[CHARACTER_NAMES[index]]
+
         print(character)
         url = f"{CHARACTERS[character]}/{character}_"
         super().__init__(url + "idle.png")
@@ -271,6 +275,7 @@ class Octopus_Game(arcade.View):
         self.load_map("./map.txt")
 
         char = self.socket.recv(1024)
+
         char = char.decode("ascii")
 
         self.player2 = Player(0, 0, self.sprite_width, self.sprite_height, char)
@@ -334,7 +339,7 @@ class Octopus_Game(arcade.View):
         Normally, you'll call update() on the sprite lists that
         need it.
         """
-
+        self.player2.draw()
         self.player_list.update()
 
         self.player_list.update_animation()
@@ -365,7 +370,7 @@ class Octopus_Game(arcade.View):
     def recv_info(self):
         try:
             while True:
-                player_pos = self.socket.recv(1024)
+                player_pos = self.socket.recv(13)
                 player_pos = player_pos.decode("ascii")
                 print(player_pos)
 
