@@ -3,6 +3,8 @@ import arcade
 import arcade.gui
 import socket
 
+import sys
+
 TILE_SCALING = 1
 SPRITE_SCALING = 1
 SCREEN_TITLE = "Platformer"
@@ -442,8 +444,9 @@ def main():
     """Main method"""
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # 192.168.56.1
-    player2_ip = "162.196.90.150"  # sys.argv[1]
+    # player2_ip = "162.196.90.150"
+    player2_ip = sys.argv[1]
+
     # local ip for local connections
     print(socket.gethostbyname(socket.gethostname()))
 
