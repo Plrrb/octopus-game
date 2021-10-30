@@ -133,11 +133,14 @@ class Main_View(arcade.View):
 
     def on_update(self, delta_time):
         self.cached_player_can_jump = self.physics_engine.can_jump()
-        self.physics_engine.update()
+
         self.update_player_contols()
 
         self.player.update(delta_time)
+
         self.player.update_texture(self.cached_player_can_jump)
+
+        self.physics_engine.update()
 
     def update_player_contols(self):
         right = self.controls.get(arcade.key.D)
