@@ -142,7 +142,7 @@ class Coin(arcade.Sprite):
 
 class Player(arcade.Sprite):
     def __init__(self, x, y, w, h, index):
-
+        print(index)
         character = CHARACTERS[CHARACTER_NAMES[index]]
 
         print(character)
@@ -318,6 +318,7 @@ class Octopus_Game(arcade.View):
         # This command should happen before we start drawing. It will clear
         # the screen to the background color, and erase what we drew last frame
         arcade.start_render()
+        self.player2.draw()
 
         # Call draw() on all your sprite lists below
 
@@ -339,7 +340,6 @@ class Octopus_Game(arcade.View):
         Normally, you'll call update() on the sprite lists that
         need it.
         """
-        self.player2.draw()
         self.player_list.update()
 
         self.player_list.update_animation()
@@ -370,6 +370,7 @@ class Octopus_Game(arcade.View):
     def recv_info(self):
         try:
             while True:
+                self.send_our_pos()
                 player_pos = self.socket.recv(13)
                 player_pos = player_pos.decode("ascii")
                 print(player_pos)
@@ -377,7 +378,6 @@ class Octopus_Game(arcade.View):
                 player_pos = eval(player_pos)
 
                 self.player2.center_x, self.player2.center_y = player_pos
-                self.send_our_pos()
         except ConnectionResetError:
             print("Other Player has left")
             self.leave()
