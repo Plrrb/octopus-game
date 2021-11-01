@@ -15,44 +15,12 @@ import sys
 GRAVITY = 9.8 / 20
 
 
-class Controls:
-    def __init__(self):
-        self.inputs = {None: None}
+class Character_Texture_System:
+    def __init__(self, url):
+        self.textures_tuple = self.load_textures(url)
+        self.walk_textures = self.load_walk_textures(url)
 
-    def get(self, input_name):
-        return self.inputs.get(input_name, None)
-
-    def press(self, input_name, value):
-        self.inputs[input_name] = value
-
-
-class Player(arcade.Sprite):
-    def __init__(self, textures):
-        super().__init__()
-
-        # left = 0, right = 1
-        self.direction = 0
-        self.max_speed = 3
-        self.animation_speed_reducer = 10
-        self.walk_index = 0
-        self.friction = 0.5
-        self.acceleration_reducer = 2
-        self.jump_power = 10
-
-        self.textures_tuple = textures[0]
-        self.walk_textures = textures[1]
         self.texture = self.textures_tuple[0][0]
-
-        self.center_x = 500
-        self.center_y = 500
-
-        self.load_sounds()
-
-    def load_sounds(self):
-        self.jump_sound = arcade.load_sound(":resources:sounds/jump1.wav")
-
-    def update(self, delta_time):
-        super().update()
 
     def set_texture_state(self, texture_num):
         self.texture = self.textures_tuple[texture_num][self.direction]
@@ -95,6 +63,57 @@ class Player(arcade.Sprite):
     def reset_walk(self):
         self.walk_index = 0
 
+    @staticmethod
+    def load_textures(url):
+        return (
+            (arcade.load_texture_pair(url + "idle.png")),
+            (arcade.load_texture_pair(url + "jump.png")),
+            (arcade.load_texture_pair(url + "fall.png")),
+        )
+
+    @staticmethod
+    def load_walk_textures(url):
+        return (
+            (arcade.load_texture_pair(url + "walk0.png")),
+            (arcade.load_texture_pair(url + "walk2.png")),
+            (arcade.load_texture_pair(url + "walk3.png")),
+            (arcade.load_texture_pair(url + "walk4.png")),
+            (arcade.load_texture_pair(url + "walk5.png")),
+            (arcade.load_texture_pair(url + "walk6.png")),
+            (arcade.load_texture_pair(url + "walk7.png")),
+        )
+
+
+class Controls:
+    def __init__(self):
+        self.inputs = {None: None}
+
+    def get(self, input_name):
+        return self.inputs.get(input_name, None)
+
+    def press(self, input_name, value):
+        self.inputs[input_name] = value
+
+
+class Player(arcade.Sprite, Character_Texture_System):
+    def __init__(self, url):
+        arcade.Sprite.__init__(self)
+        Character_Texture_System.__init__(self, url)
+
+        # left = 0, right = 1
+        self.direction = 0
+        self.max_speed = 3
+        self.animation_speed_reducer = 10
+        self.walk_index = 0
+        self.friction = 0.5
+        self.acceleration_reducer = 2
+        self.jump_power = 10
+
+        self.center_x = 500
+        self.center_y = 500
+
+        self.jump_sound = arcade.load_sound(":resources:sounds/jump1.wav")
+
     def jump(self):
         self.change_y += self.jump_power
         arcade.play_sound(self.jump_sound)
@@ -119,7 +138,7 @@ class Main_View(arcade.View):
         self.controls = Controls()
 
         self.make_walls()
-        self.make_player(character_url)
+        self.player = Player(character_url)
         self.make_physics_engine()
 
         self.left_pressed_before_right = False
@@ -136,7 +155,7 @@ class Main_View(arcade.View):
 
         self.update_player_contols()
 
-        self.player.update(delta_time)
+        self.player.update()
 
         self.player.update_texture(self.cached_player_can_jump)
 
@@ -179,25 +198,6 @@ class Main_View(arcade.View):
         self.wall_list = arcade.SpriteList()
         self.wall_list.append(wall)
 
-    def make_player(self, url):
-        textures = (
-            (arcade.load_texture_pair(url + "idle.png")),
-            (arcade.load_texture_pair(url + "jump.png")),
-            (arcade.load_texture_pair(url + "fall.png")),
-        )
-
-        walk_textures = (
-            (arcade.load_texture_pair(url + "walk0.png")),
-            (arcade.load_texture_pair(url + "walk2.png")),
-            (arcade.load_texture_pair(url + "walk3.png")),
-            (arcade.load_texture_pair(url + "walk4.png")),
-            (arcade.load_texture_pair(url + "walk5.png")),
-            (arcade.load_texture_pair(url + "walk6.png")),
-            (arcade.load_texture_pair(url + "walk7.png")),
-        )
-
-        self.player = Player((textures, walk_textures))
-
     def make_physics_engine(self):
         self.physics_engine = arcade.PhysicsEnginePlatformer(
             self.player, self.wall_list, GRAVITY
@@ -215,8 +215,6 @@ class Online_Game(Main_View):
 
         t = threading.Thread(target=self.recv_other_players_pos, daemon=True)
         t.start()
-
-    # def make_connection(self):
 
     def on_draw(self):
         super().on_draw()
@@ -246,18 +244,21 @@ class Online_Game(Main_View):
             return
 
 
-def main():
+def make_connection(ip, port):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # player2_ip = "162.196.90.150"
-    player2_ip = sys.argv[1]
-
-    # local ip for local connections
-    print(socket.gethostbyname(socket.gethostname()))
 
     print("Trying to connect...")
-    client_socket.connect((player2_ip, 5555))
+    client_socket.connect((ip, port))
     print("Connected!")
+
+    return client_socket
+
+
+def main():
+    client_socket = make_connection(sys.argv[1], 5555)
+
     window = arcade.Window(1000, 1000, "Octopus Game")
     screen = Online_Game(
         ":resources:images/animated_characters/male_adventurer/maleAdventurer_",
