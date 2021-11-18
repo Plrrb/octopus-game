@@ -16,7 +16,46 @@ import sys
 GRAVITY = 9.8 / 20
 
 
-class Main_View(arcade.View):
+# import pickle
+# class Network:
+#     def __init__(self, on_recv: function, on_send: function):
+#         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#         self.on_recv = on_recv
+#         self.on_send = on_send
+
+#     def connect(self, ip):
+#         print("Trying to connect...")
+#         self.socket.connect((ip, 5555))
+#         print("Connected!")
+
+#     def get_incoming_data(self):
+#         return self.incoming_data
+
+#     def run(self):
+#         t = threading.Thread(target=self.listen)
+#         t.start()
+
+#     def listen(self):
+#         try:
+#             while True:
+#                 data = pickle.dumps(self.on_send())
+#                 self.socket.send(data)
+
+#                 incoming_data = self.socket.recv(2048)
+#                 incoming_data = pickle.loads(incoming_data)
+#                 self.on_recv(incoming_data)
+
+#         except socket.error:
+#             print("Server Error!")
+#             self.socket.close()
+#             return
+
+#     @staticmethod
+#     def get_local_ip():
+#         return socket.gethostbyname(socket.gethostname())
+
+
+class Base_Game(arcade.View):
     def __init__(self, character_url):
         super().__init__()
 
@@ -88,7 +127,7 @@ class Main_View(arcade.View):
         )
 
 
-class Online_Game(Main_View):
+class Online_Game(Base_Game):
     def __init__(self, character_url, socket):
         super().__init__(character_url)
         self.socket = socket
