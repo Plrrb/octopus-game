@@ -29,6 +29,8 @@ class Server:
         try:
             while True:
                 data = conn.recv(1024)
+                # this could cause a problem, where we send double data to a client
+                # maybe try a loop that sends and recv's for each client
                 self.send_to_other_clients(data, conn)
 
         except ConnectionResetError:

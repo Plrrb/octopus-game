@@ -20,7 +20,7 @@ class Main_View(arcade.View):
     def __init__(self, character_url):
         super().__init__()
 
-        self.controls = Controls()
+        self.controls = Boolean_Input()
 
         self.make_walls()
         self.player = Controllable_Player(character_url)
@@ -62,10 +62,10 @@ class Main_View(arcade.View):
             self.player.jump()
 
     def on_key_press(self, key, modifiers):
-        self.controls.press(key, True)
+        self.controls.press(key)
 
     def on_key_release(self, key, modifiers):
-        self.controls.press(key, False)
+        self.controls.release(key)
 
     def on_mouse_press(self, x, y, button, modifiers):
         self.player.set_position(x, y)
@@ -102,7 +102,6 @@ class Online_Game(Main_View):
 
     def on_draw(self):
         super().on_draw()
-
         self.player2.draw()
 
     def on_update(self, delta_time):
@@ -130,15 +129,18 @@ class Online_Game(Main_View):
             return
 
 
-class Controls:
+class Boolean_Input:
     def __init__(self):
         self.inputs = {None: None}
 
     def get(self, input_name):
         return self.inputs.get(input_name, None)
 
-    def press(self, input_name, value):
-        self.inputs[input_name] = value
+    def press(self, input_name):
+        self.inputs[input_name] = True
+
+    def release(self, input_name):
+        self.inputs[input_name] = False
 
 
 class Base_Player(arcade.Sprite):
