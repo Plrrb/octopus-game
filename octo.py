@@ -63,49 +63,6 @@ class Start_Screen(arcade.View):
 
         self.ui_manager.add(arcade.gui.UIAnchorWidget(child=box))
 
-        # width = 150
-        # height = 150
-
-        # idle_chars = [
-        #     arcade.load_texture(f"{CHARACTERS[key]}/{key}_idle.png")
-        #     for key in CHARACTERS
-        # ]
-
-        # start = (self.display_width / 2) - (width * 3)
-
-        # # draw row
-        # rows = (len(CHARACTERS) // 6) + 1
-
-        # counter = len(CHARACTERS)
-        # for j in range(rows):
-        #     if counter >= 6:
-        #         range_num = 6
-        #     else:
-        #         range_num = counter % 6
-
-        #     for i in range(range_num):
-        #         x = (start + i * width) + width / 2
-        #         y = self.display_height - (height * j) - 200
-        #         # arcade.draw_rectangle_outline(
-        #         #     x,
-        #         #     y,
-        #         #     width,
-        #         #     height,
-        #         #     arcade.color.RED,
-        #         # )
-        #         # arcade.draw_scaled_texture_rectangle(x, y, idle_chars[i])
-        #         button = arcade.gui.UITextureButton(x, y, width, height, idle_chars[i])
-        #         button.on_click(lambda: self.start_game(idle_chars[i]))
-
-        #         self.buttons.append(button)
-
-        #     counter -= 6
-
-    def setup(self):
-        """This should set up your game and get it ready to play"""
-        # Replace 'pass' with the code to set up your game
-        pass
-
     def on_show_view(self):
         """Called when switching to this view"""
         arcade.set_background_color(arcade.color.ORANGE_PEEL)

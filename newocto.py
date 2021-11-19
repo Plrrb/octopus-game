@@ -8,11 +8,14 @@
 # functions should only do one thing
 #   classes should only be one thing
 
-import threading
-import arcade
+import pickle
 import socket
 import sys
-import pickle
+import threading
+
+import arcade.gui
+
+import arcade
 
 GRAVITY = 9.8 / 20
 
@@ -55,6 +58,66 @@ class Network:
     @staticmethod
     def get_local_ip():
         return socket.gethostbyname(socket.gethostname())
+
+
+class Character_Chooser(arcade.View):
+    def __init__(self, ip):
+        super().__init__()
+        self.characters = (
+            ":resources:images/animated_characters/male_adventurer/maleAdventurer_",
+            ":resources:images/animated_characters/female_adventurer/femaleAdventurer_",
+            ":resources:images/animated_characters/female_person/femalePerson_",
+            ":resources:images/animated_characters/male_person/malePerson_",
+            ":resources:images/animated_characters/robot/robot_",
+            ":resources:images/animated_characters/zombie/zombie_",
+        )
+
+        self.char = None
+        self.network = Network(self.on_recv, self.on_send)
+        self.network.connect(ip)
+
+        self.buttons = []
+        self.make_buttons()
+
+    def choose_character(self, char):
+        self.char = char
+        self.network.run()
+
+    def on_send(self):
+        return self.char
+
+    def on_recv(self, data):
+        data = data[0]
+
+        game = Online_Game(self.char, data, self.network)
+
+        self.window.show_view(game)
+
+    def make_buttons(self):
+        self.ui_manager = arcade.gui.UIManager(self.window)
+
+        box = arcade.gui.UIBoxLayout(vertical=False)
+
+        for i in self.characters:
+            t = arcade.load_texture(i + "idle.png")
+            b = arcade.gui.UITextureButton(texture=t)
+            b.on_click = lambda *x, key=i: self.choose_character(key)
+            box.add(b)
+
+        self.ui_manager.add(arcade.gui.UIAnchorWidget(child=box))
+
+    def on_show_view(self):
+        """Called when switching to this view"""
+        arcade.set_background_color(arcade.color.ORANGE_PEEL)
+        self.ui_manager.enable()
+
+    def on_hide_view(self):
+        # This unregisters the manager's UI handlers,
+        # Handlers respond to GUI button clicks, etc.
+        self.ui_manager.disable()
+
+    def on_draw(self):
+        self.ui_manager.draw()
 
 
 class Base_Game(arcade.View):
@@ -130,17 +193,14 @@ class Base_Game(arcade.View):
 
 
 class Online_Game(Base_Game):
-    def __init__(self, character_url, player2_ip):
-        super().__init__(character_url)
+    def __init__(self, player1, player2, network):
+        super().__init__(player1)
 
-        self.network = Network(self.on_recv, self.on_send)
-        self.network.connect(player2_ip)
+        self.network = network
+        self.network.on_recv = self.on_recv
+        self.network.on_send = self.on_send
 
-        self.player2 = Online_Player(
-            ":resources:images/animated_characters/robot/robot_"
-        )
-
-        self.network.run()
+        self.player2 = Online_Player(player2)
 
     def on_draw(self):
         super().on_draw()
@@ -293,8 +353,7 @@ def main():
     player2_ip = sys.argv[1]
 
     window = arcade.Window(1000, 1000, "Octopus Game")
-    screen = Online_Game(
-        ":resources:images/animated_characters/male_adventurer/maleAdventurer_",
+    screen = Character_Chooser(
         player2_ip,
     )
 
