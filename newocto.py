@@ -196,12 +196,11 @@ class Base_Game(arcade.View):
 class Online_Game(Base_Game):
     def __init__(self, player1, player2, network):
         super().__init__(player1)
+        self.player2 = Online_Player(player2)
 
         self.network = network
         self.network.on_recv = self.on_recv
         self.network.on_send = self.on_send
-
-        self.player2 = Online_Player(player2)
 
     def on_draw(self):
         super().on_draw()
