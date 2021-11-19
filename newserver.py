@@ -75,7 +75,6 @@ class Client:
                 incoming_data = self.conn.recv(2048)
 
                 self.database[self.id] = pickle.loads(incoming_data)
-                print(self.database)
 
                 data = pickle.dumps(self.get_database_exclude_self())
                 self.conn.send(data)

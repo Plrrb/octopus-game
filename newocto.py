@@ -152,7 +152,6 @@ class Online_Game(Base_Game):
     def on_recv(self, data):
 
         data = data[0]
-        print(data)
         self.player2.set_data(data[0], data[1], data[2])
 
     def on_update(self, delta_time):
