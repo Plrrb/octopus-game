@@ -343,6 +343,7 @@ class Online_Player(Base_Player):
         self.change_texture(*self.texture_number)
 
     def set_data(self, x, y, texture_number):
+        print(x, y, texture_number)
         self.center_x = x
         self.center_y = y
 
