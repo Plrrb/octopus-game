@@ -12,47 +12,49 @@ import threading
 import arcade
 import socket
 import sys
+import pickle
 
 GRAVITY = 9.8 / 20
 
 
-# import pickle
-# class Network:
-#     def __init__(self, on_recv: function, on_send: function):
-#         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         self.on_recv = on_recv
-#         self.on_send = on_send
+class Network:
+    def __init__(self, on_recv, on_send):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.on_recv = on_recv
+        self.on_send = on_send
 
-#     def connect(self, ip):
-#         print("Trying to connect...")
-#         self.socket.connect((ip, 5555))
-#         print("Connected!")
+    def connect(self, ip):
+        print("Trying to connect...")
+        self.socket.connect((ip, 5555))
+        print("Connected!")
 
-#     def get_incoming_data(self):
-#         return self.incoming_data
+    def get_incoming_data(self):
+        return self.incoming_data
 
-#     def run(self):
-#         t = threading.Thread(target=self.listen)
-#         t.start()
+    def run(self):
+        t = threading.Thread(target=self.listen)
+        t.start()
 
-#     def listen(self):
-#         try:
-#             while True:
-#                 data = pickle.dumps(self.on_send())
-#                 self.socket.send(data)
+    def listen(self):
+        try:
+            while True:
+                data = pickle.dumps(self.on_send())
+                self.socket.send(data)
 
-#                 incoming_data = self.socket.recv(2048)
-#                 incoming_data = pickle.loads(incoming_data)
-#                 self.on_recv(incoming_data)
+                incoming_data = self.socket.recv(2048)
+                incoming_data = pickle.loads(incoming_data)
 
-#         except socket.error:
-#             print("Server Error!")
-#             self.socket.close()
-#             return
+                if len(incoming_data) != 0 and incoming_data[0] is not None:
+                    self.on_recv(incoming_data)
 
-#     @staticmethod
-#     def get_local_ip():
-#         return socket.gethostbyname(socket.gethostname())
+        except socket.error:
+            print("Server Error!")
+            self.socket.close()
+            return
+
+    @staticmethod
+    def get_local_ip():
+        return socket.gethostbyname(socket.gethostname())
 
 
 class Base_Game(arcade.View):
@@ -128,44 +130,34 @@ class Base_Game(arcade.View):
 
 
 class Online_Game(Base_Game):
-    def __init__(self, character_url, socket):
+    def __init__(self, character_url, player2_ip):
         super().__init__(character_url)
-        self.socket = socket
+
+        self.network = Network(self.on_recv, self.on_send)
+        self.network.connect(player2_ip)
 
         self.player2 = Online_Player(
             ":resources:images/animated_characters/robot/robot_"
         )
 
-        t = threading.Thread(target=self.recv_other_players_pos, daemon=True)
-        t.start()
+        self.network.run()
 
     def on_draw(self):
         super().on_draw()
         self.player2.draw()
 
+    def on_send(self):
+        return self.player.center_x, self.player.center_y, self.player.texture_number
+
+    def on_recv(self, data):
+
+        data = data[0]
+        print(data)
+        self.player2.set_data(data[0], data[1], data[2])
+
     def on_update(self, delta_time):
         super().on_update(delta_time)
         self.player2.update()
-
-    def send_our_pos(self):
-        self.socket.send(
-            f"{self.player.center_x},{self.player.center_y},{self.player.texture_number}".encode()
-        )
-
-    def recv_other_players_pos(self):
-        try:
-            while True:
-                self.send_our_pos()
-                data = self.socket.recv(512)
-                data = data.decode()
-                data = eval(data)
-                self.player2.set_data(*data)
-
-        except ConnectionResetError:
-            print("Server Error!")
-            self.socket.close()
-            arcade.exit()
-            return
 
 
 class Boolean_Input:
@@ -298,21 +290,13 @@ class Online_Player(Base_Player):
 
 
 def main():
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     # player2_ip = "162.196.90.150"
     player2_ip = sys.argv[1]
 
-    # local ip for local connections
-    print(socket.gethostbyname(socket.gethostname()))
-
-    print("Trying to connect...")
-    client_socket.connect((player2_ip, 5555))
-    print("Connected!")
     window = arcade.Window(1000, 1000, "Octopus Game")
     screen = Online_Game(
         ":resources:images/animated_characters/male_adventurer/maleAdventurer_",
-        client_socket,
+        player2_ip,
     )
 
     window.show_view(screen)
