@@ -73,11 +73,12 @@ class Character_Chooser(arcade.View):
         )
 
         self.char = None
-        self.network = Network(self.on_recv, self.on_send)
-        self.network.connect(ip)
 
         self.buttons = []
         self.make_buttons()
+
+        self.network = Network(self.on_recv, self.on_send)
+        self.network.connect(ip)
 
     def choose_character(self, char):
         self.char = char
