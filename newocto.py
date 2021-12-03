@@ -21,48 +21,7 @@ import arcade
 
 GRAVITY = 9.8 / 20
 
-
-class Network:
-    def __init__(self, on_recv, on_send):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.on_recv = on_recv
-        self.on_send = on_send
-
-    def connect(self, ip):
-        print("Trying to connect...")
-        self.socket.connect((ip, 5555))
-        print("Connected!")
-
-    def get_incoming_data(self):
-        return self.incoming_data
-
-    def run(self):
-        t = threading.Thread(target=self.listen)
-        t.start()
-
-    def listen(self):
-        try:
-            while True:
-                data = pickle.dumps(self.on_send())
-
-                self.socket.send(data)
-
-                incoming_data = self.socket.recv(2048)
-                incoming_data = pickle.loads(incoming_data)
-
-                if len(incoming_data) != 0 and incoming_data[0] is not None:
-                    self.on_recv(incoming_data)
-
-                # time.sleep(0.1)
-
-        except socket.error:
-            print("Server Error!")
-            self.socket.close()
-            return
-
-    @staticmethod
-    def get_local_ip():
-        return socket.gethostbyname(socket.gethostname())
+from network import Network
 
 
 class Character_Chooser(arcade.View):
@@ -90,7 +49,7 @@ class Character_Chooser(arcade.View):
         self.network.run()
 
     def on_send(self):
-        return self.char
+        return {"character": self.char}
 
     def on_recv(self, data):
         data = data[0]
@@ -212,7 +171,13 @@ class Online_Game(Base_Game):
         self.player2.draw()
 
     def on_send(self):
-        return self.player.center_x, self.player.center_y, self.player.texture_number
+        return {
+            "player2": (
+                self.player.center_x,
+                self.player.center_y,
+                self.player.texture_number,
+            )
+        }
 
     def on_recv(self, data):
 
