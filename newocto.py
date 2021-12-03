@@ -15,6 +15,8 @@ import threading
 
 import arcade.gui
 
+import time
+
 import arcade
 
 GRAVITY = 9.8 / 20
@@ -42,6 +44,7 @@ class Network:
         try:
             while True:
                 data = pickle.dumps(self.on_send())
+
                 self.socket.send(data)
 
                 incoming_data = self.socket.recv(2048)
@@ -49,6 +52,8 @@ class Network:
 
                 if len(incoming_data) != 0 and incoming_data[0] is not None:
                     self.on_recv(incoming_data)
+
+                # time.sleep(0.1)
 
         except socket.error:
             print("Server Error!")
@@ -342,6 +347,10 @@ class Online_Player(Base_Player):
         self.change_texture(*self.texture_number)
 
     def set_data(self, x, y, texture_number):
+
+        if not isinstance(x, float):
+            return
+
         print(x, y, texture_number)
         self.center_x = x
         self.center_y = y

@@ -29,7 +29,7 @@ class Client:
         return self.database[0 : self.id] + self.database[self.id + 1 :]
 
 
-class New_Server:
+class Server:
     def __init__(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((socket.gethostname(), 5555))
@@ -52,7 +52,7 @@ class New_Server:
 
 def main():
 
-    server = New_Server()
+    server = Server()
     server.connect()
 
     t = threading.Thread(target=server.listen_for_clients, daemon=True)
