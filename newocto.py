@@ -336,7 +336,7 @@ def main():
     server_socket.connect((ip, 5555))
     print("Connected!")
 
-    window = arcade.Window(1000, 1000, "Octopus Game")
+    window = arcade.Window(800, 600, "Octopus Game")
     screen = Character_Chooser(
         server_socket,
     )
