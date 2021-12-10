@@ -25,7 +25,7 @@ from network import Network
 
 
 class Character_Chooser(arcade.View):
-    def __init__(self, ip):
+    def __init__(self, socket):
         super().__init__()
         self.characters = (
             ":resources:images/animated_characters/male_adventurer/maleAdventurer_",
@@ -41,20 +41,22 @@ class Character_Chooser(arcade.View):
         self.buttons = []
         self.make_buttons()
 
-        self.network = Network(self.on_recv, self.on_send)
-        self.network.connect(ip)
+        self.network = Network(socket, self.on_recv, self.on_send)
 
     def choose_character(self, char):
         self.char = char
         self.network.run()
 
     def on_send(self):
-        return {"character": self.char}
+        return {"character": self.char, "player_data": (0, 0, (0, 0, 0))}
 
-    def on_recv(self, data):
-        data = data[0]
+    def on_recv(self, database):
+        # gets the other client jankeyly
 
-        game = Online_Game(self.char, data, self.network)
+        for player in database:
+            character = database[player]["character"]
+
+        game = Online_Game(self.char, character, self.network.socket)
 
         self.window.show_view(game)
 
@@ -158,13 +160,12 @@ class Base_Game(arcade.View):
 
 
 class Online_Game(Base_Game):
-    def __init__(self, player1, player2, network):
+    def __init__(self, player1, player2, socket):
         super().__init__(player1)
         self.player2 = Online_Player(player2)
 
-        self.network = network
-        self.network.on_recv = self.on_recv
-        self.network.on_send = self.on_send
+        self.network = Network(socket, self.on_recv, self.on_send)
+        self.network.run()
 
     def on_draw(self):
         super().on_draw()
@@ -172,17 +173,19 @@ class Online_Game(Base_Game):
 
     def on_send(self):
         return {
-            "player2": (
+            "player_data": (
                 self.player.center_x,
                 self.player.center_y,
                 self.player.texture_number,
             )
         }
 
-    def on_recv(self, data):
+    def on_recv(self, database):
 
-        data = data[0]
-        self.player2.set_data(data[0], data[1], data[2])
+        for key in database:
+            player_data = database[key]["player_data"]
+
+        self.player2.set_data(player_data[0], player_data[1], player_data[2])
 
     def on_update(self, delta_time):
         super().on_update(delta_time)
@@ -325,11 +328,17 @@ class Online_Player(Base_Player):
 
 def main():
     # player2_ip = "162.196.90.150"
-    player2_ip = sys.argv[1]
+    ip = sys.argv[1]
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    print("Trying to connect...")
+    server_socket.connect((ip, 5555))
+    print("Connected!")
 
     window = arcade.Window(1000, 1000, "Octopus Game")
     screen = Character_Chooser(
-        player2_ip,
+        server_socket,
     )
 
     window.show_view(screen)
