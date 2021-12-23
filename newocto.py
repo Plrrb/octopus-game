@@ -167,10 +167,6 @@ class Online_Game(Base_Game):
         self.network = Network(socket, self.on_recv, self.on_send)
         self.network.run()
 
-    def on_draw(self):
-        super().on_draw()
-        self.player2.draw()
-
     def on_send(self):
         return {
             "player_data": (
@@ -181,15 +177,20 @@ class Online_Game(Base_Game):
         }
 
     def on_recv(self, database):
-
         for key in database:
             player_data = database[key]["player_data"]
 
-        self.player2.set_data(player_data[0], player_data[1], player_data[2])
+        print(player_data)
 
-    def on_update(self, delta_time):
-        super().on_update(delta_time)
-        self.player2.update()
+        # self.player2.set_data(player_data[0], player_data[1], player_data[2])
+
+    # def on_update(self, delta_time):
+    #     super().on_update(delta_time)
+    #     self.player2.update()
+
+    # def on_draw(self):
+    #     super().on_draw()
+    #     self.player2.draw()
 
 
 class Boolean_Input:
@@ -315,11 +316,6 @@ class Online_Player(Base_Player):
         self.change_texture(*self.texture_number)
 
     def set_data(self, x, y, texture_number):
-
-        if not isinstance(x, float):
-            return
-
-        print(x, y, texture_number)
         self.center_x = x
         self.center_y = y
 
@@ -337,9 +333,7 @@ def main():
     print("Connected!")
 
     window = arcade.Window(800, 600, "Octopus Game")
-    screen = Character_Chooser(
-        server_socket,
-    )
+    screen = Character_Chooser(server_socket)
 
     window.show_view(screen)
     arcade.run()
@@ -347,3 +341,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # window = arcade.Window(800, 600, "Octopus Game")
+    # g = Base_Game(
+    #     ":resources:images/animated_characters/male_adventurer/maleAdventurer_"
+    # )
+
+    # window.show_view(g)
+    # arcade.run()

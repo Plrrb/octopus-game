@@ -5,6 +5,9 @@ import sys
 import time
 
 
+RECV_BYTE_SIZE = 2048
+
+
 class Network:
     def __init__(self, socket, on_recv, on_send):
         self.socket = socket
@@ -42,7 +45,7 @@ class Network:
             return
 
     def recv_data(self):
-        data = self.socket.recv(512)
+        data = self.socket.recv(RECV_BYTE_SIZE)
         data = pickle.loads(data)
         self.incoming_channels.update(data)
 

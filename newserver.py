@@ -3,6 +3,8 @@ import socket
 import threading
 import time
 
+RECV_BYTE_SIZE = 2048
+
 
 class Server:
     def __init__(self):
@@ -54,7 +56,7 @@ class Server:
 
                     self.send_data(self.get_database_exclude_self())
 
-                    time.sleep(1)
+                    # time.sleep(1)
 
             except ConnectionResetError:
                 self.conn.close()
@@ -70,7 +72,7 @@ class Server:
             self.socket.send(data)
 
         def recv_data(self):
-            data = self.socket.recv(512)
+            data = self.socket.recv(RECV_BYTE_SIZE)
             data = pickle.loads(data)
             return data
 
