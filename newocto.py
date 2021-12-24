@@ -182,15 +182,15 @@ class Online_Game(Base_Game):
 
         print(player_data)
 
-        # self.player2.set_data(player_data[0], player_data[1], player_data[2])
+        self.player2.set_data(player_data[0], player_data[1], player_data[2])
 
-    # def on_update(self, delta_time):
-    #     super().on_update(delta_time)
-    #     self.player2.update()
+    def on_update(self, delta_time):
+        super().on_update(delta_time)
+        self.player2.update()
 
-    # def on_draw(self):
-    #     super().on_draw()
-    #     self.player2.draw()
+    def on_draw(self):
+        super().on_draw()
+        self.player2.draw()
 
 
 class Boolean_Input:
