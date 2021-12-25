@@ -57,7 +57,9 @@ class Character_Chooser(arcade.View):
             character = database[player]["character"]
 
         game = Online_Game(self.char, character, self.network.socket)
+        print("switching to online game")
 
+        self.network.stop()
         self.window.show_view(game)
 
     def make_buttons(self):
@@ -82,6 +84,7 @@ class Character_Chooser(arcade.View):
         # This unregisters the manager's UI handlers,
         # Handlers respond to GUI button clicks, etc.
         self.ui_manager.disable()
+        print("charicter chooser over")
 
     def on_draw(self):
         self.ui_manager.draw()

@@ -37,12 +37,12 @@ class Network:
 
                 self.on_recv(d)
 
-                # time.sleep(0.1)
+                time.sleep(1)
 
         except socket.error:
             print("Server Error!")
             self.socket.close()
-            return
+            self.stop()
 
     def recv_data(self):
         data = self.socket.recv(RECV_BYTE_SIZE)
