@@ -1,9 +1,7 @@
+import pickle
 import socket
 import threading
-import pickle
-import sys
 import time
-
 
 RECV_BYTE_SIZE = 2048
 

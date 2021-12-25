@@ -1,64 +1,72 @@
-import threading
-import arcade
-import arcade.gui
-import socket
+# KISS:
+# keep it simple, stupid
+# OR:
+# keep it separate, stupid
 
+# A Base Class should only only share the similarities between the sub classes
+
+# functions should only do one thing
+#   classes should only be one thing
+
+
+import socket
 import sys
 
+import arcade
+import arcade.gui
 
-TILE_SCALING = 1
-SPRITE_SCALING = 1
-SCREEN_TITLE = "Platformer"
-GRAVITY = 0.2
+GRAVITY = 9.8 / 20
 
-CHARACTERS = {
-    "maleAdventurer": ":resources:images/animated_characters/male_adventurer",
-    "femaleAdventurer": ":resources:images/animated_characters/female_adventurer",
-    "femalePerson": ":resources:images/animated_characters/female_person",
-    "malePerson": ":resources:images/animated_characters/male_person",
-    "robot": ":resources:images/animated_characters/robot",
-    "zombie": ":resources:images/animated_characters/zombie",
-}
-
-CHARACTER_NAMES = [key for key in CHARACTERS]
-
-MOVEMENT_SPEED = 5
-UPDATES_PER_FRAME = 2
+from network import Network
 
 
-class Start_Screen(arcade.View):
-    def __init__(self, my_window, display_width, display_height, client_socket):
+class Character_Chooser(arcade.View):
+    def __init__(self, socket):
         super().__init__()
-        self.display_width = display_width
-        self.display_height = display_height
-        self.window = my_window
+        self.characters = (
+            ":resources:images/animated_characters/male_adventurer/maleAdventurer_",
+            ":resources:images/animated_characters/female_adventurer/femaleAdventurer_",
+            ":resources:images/animated_characters/female_person/femalePerson_",
+            ":resources:images/animated_characters/male_person/malePerson_",
+            ":resources:images/animated_characters/robot/robot_",
+            ":resources:images/animated_characters/zombie/zombie_",
+        )
 
-        self.socket = client_socket
+        self.char = None
 
         self.buttons = []
         self.make_buttons()
 
-    def on_draw(self):
-        self.ui_manager.draw()
+        self.network = Network(socket, self.on_recv, self.on_send)
 
-    def choose_characters(self, character):
-        self.socket.send(character.encode("ascii"))
+    def choose_character(self, char):
+        self.char = char
+        self.network.run()
 
-        octopus_game = Octopus_Game(
-            self.display_width, self.display_height, character, self.socket
-        )
-        octopus_game.setup()
-        self.window.show_view(octopus_game)
+    def on_send(self):
+        # this could be is some higher class that owns this class's instance and sends this empty player_data
+        return {"character": self.char, "player_data": (0, 0, (0, 0, 0))}
+
+    def on_recv(self, database):
+        # gets the other client jankeyly
+
+        for player in database:
+            character = database[player]["character"]
+
+        game = Online_Game(self.char, character, self.network.socket)
+
+        self.network.stop()
+        self.window.show_view(game)
 
     def make_buttons(self):
         self.ui_manager = arcade.gui.UIManager(self.window)
 
         box = arcade.gui.UIBoxLayout(vertical=False)
 
-        for i in CHARACTER_NAMES:
-            t = arcade.load_texture(f"{CHARACTERS[i]}/{i}_idle.png")
+        for i in self.characters:
+            t = arcade.load_texture(i + "idle.png")
             b = arcade.gui.UITextureButton(texture=t)
-            b.on_click = lambda *x, key=i: self.choose_characters(key)
+            b.on_click = lambda *x, key=i: self.choose_character(key)
             box.add(b)
 
         self.ui_manager.add(arcade.gui.UIAnchorWidget(child=box))
@@ -72,371 +80,271 @@ class Start_Screen(arcade.View):
         # This unregisters the manager's UI handlers,
         # Handlers respond to GUI button clicks, etc.
         self.ui_manager.disable()
+        print("charicter chooser over")
+
+    def on_draw(self):
+        self.ui_manager.draw()
 
 
-def load_texture_pair(filename):
-    """
-    Load a texture pair, with the second being a mirror image.
-    """
-
-    return {
-        "right": arcade.load_texture(filename),
-        "left": arcade.load_texture(filename, flipped_horizontally=True),
-    }
-
-
-class Coin(arcade.Sprite):
-    def __init__(self, x, y):
-        img = ":resources:images/items/coinGold.png"
-        super().__init__(img, SPRITE_SCALING)
-        self.center_x = x
-        self.center_y = y
-        self.value = 1
-
-    def effect(self, player):
-        player.give_coin(1)
-
-
-class Player(arcade.Sprite):
-    def __init__(self, x, y, w, h, index):
-        print(index)
-        character = CHARACTERS[CHARACTER_NAMES[index]]
-
-        print(character)
-        url = f"{CHARACTERS[character]}/{character}_"
-        super().__init__(url + "idle.png")
-
-        self.textures_dict = {
-            "idle": arcade.load_texture(url + "idle.png"),
-            "jump_right": arcade.load_texture(url + "jump.png"),
-            "jump_left": arcade.load_texture(
-                url + "jump.png", flipped_horizontally=True
-            ),
-            "fall_left": arcade.load_texture(
-                url + "fall.png", flipped_horizontally=True
-            ),
-            "fall_right": arcade.load_texture(url + "fall.png"),
-        }
-
-        self.texture = self.textures_dict["idle"]
-
-        self.width = w * 3
-        self.height = h * 3
-
-        self.speed_scale = 4
-        self.jump_speed = self.height / 20
-
-        self.jump_sound = arcade.load_sound(":resources:sounds/jump1.wav")
-        self.collect_coin_sound = arcade.load_sound(":resources:sounds/coin1.wav")
-
-        self.direction = "right"
-        self.cur_texture = 0
-
-        self.points = [[-22, -64], [22, -64], [22, 28], [-22, 28]]
-
-        self.walk_textures = []
-        for i in range(8):
-            texture = load_texture_pair(f"{url}walk{i}.png")
-            self.walk_textures.append(texture)
-
-        self.center_x = x
-        self.center_y = y
-        self.change_x = 0
-        self.change_y = 0
-        self.coins = 0
-
-    def update(self):
-        super().update()
-
-        if self.change_y <= -1:
-            self.texture = self.textures_dict["fall_" + self.direction]
-
-        elif self.change_y >= 1:
-            self.texture = self.textures_dict["jump_" + self.direction]
-
-        elif self.change_y == 0:
-            self.texture = self.textures_dict["idle"]
-
-    def update_animation(self, delta_time: float):
-
-        if self.change_x != 0 and self.change_y == 0:
-
-            self.cur_texture += 1
-
-            if self.cur_texture > 7 * UPDATES_PER_FRAME:
-                self.cur_texture = 0
-
-            frame = self.cur_texture // UPDATES_PER_FRAME
-            direction = self.direction
-            self.texture = self.walk_textures[frame][direction]
-
-    def get_formatted_pos(self):
-        return f"({self.center_x}, {self.center_y})"
-
-    def get_coins(self):
-        return self.coins
-
-    def give_coin(self, ammount):
-        self.coins += ammount
-        arcade.play_sound(self.collect_coin_sound)
-
-    def stop(self):
-        self.change_x = 0
-
-    def move(self, direction):
-        if direction == 1:
-            self.direction = "right"
-        else:
-            self.direction = "left"
-
-        self.change_x = direction * self.speed_scale
-
-    def jump(self, can_jump=True):
-        if can_jump:
-            self.texture = self.textures_dict["jump_" + self.direction]
-
-            arcade.play_sound(self.jump_sound)
-            self.change_y = self.jump_speed
-
-
-class Octopus_Game(arcade.View):
-    """
-    Main application class.
-
-    NOTE: Go ahead and delete the methods you don't need.
-    If you do need a method, delete the 'pass' and replace it
-    with your own code. Don't leave 'pass' in this program.
-    """
-
-    def __init__(self, display_width, display_height, character, socket):
+class Base_Game(arcade.View):
+    def __init__(self, character_url):
         super().__init__()
 
-        arcade.set_background_color(arcade.color.AMAZON)
-        self.display_width = display_width
-        self.display_height = display_height
+        self.controls = Boolean_Input()
 
-        self.socket = socket
+        self.make_walls()
+        self.player = Controllable_Player(character_url)
+        self.make_physics_engine()
 
-        self.player_list = None
-        self.wall_list = None
-        self.coin_list = None
-        self.player = None
-        self.character = character
+    def on_draw(self):
+        arcade.start_render()
 
-    def setup(self):
-        """Set up the game variables. Call to re-start the game."""
-        # Create your sprites and sprite lists here
-        self.player_list = arcade.SpriteList()
-        self.wall_list = arcade.SpriteList()
-        self.coin_list = arcade.SpriteList()
-        self.load_map("./map.txt")
+        self.player.draw()
+        self.wall_list.draw()
 
-        char = self.socket.recv(1024)
+    def on_update(self, delta_time):
+        self.physics_engine.update()
+        self.update_player_contols()
 
-        char = char.decode("ascii")
+        self.player.update()
+        self.player.update_texture(self.cached_player_can_jump)
+        self.player_can_jump_was_cached = False
 
-        self.player2 = Player(0, 0, self.sprite_width, self.sprite_height, char)
+    def cached_player_can_jump(self):
+        if not self.player_can_jump_was_cached:
+            self.player_can_jump_was_cached = True
+            return self.physics_engine.can_jump()
 
-        # add the floor
-        wall = arcade.Sprite(":resources:images/tiles/grassMid.png", TILE_SCALING)
-        wall.width = self.display_width
-        wall.center_x = self.display_height / 2
-        wall.center_y = 0
-        self.wall_list.append(wall)
+    def update_player_contols(self):
+        right = self.controls.get(arcade.key.D)
+        left = self.controls.get(arcade.key.A)
 
-        # Set up the player
-        self.player = Player(
-            50, 50, self.sprite_width, self.sprite_height, self.character
+        if right and not left:
+            self.player.move_right()
+
+        elif left and not right:
+            self.player.move_left()
+
+        else:
+            self.player.stop_moving()
+
+        if self.controls.get(arcade.key.SPACE) and self.cached_player_can_jump():
+            self.player.jump()
+
+    def on_key_press(self, key, modifiers):
+        self.controls.press(key)
+
+    def on_key_release(self, key, modifiers):
+        self.controls.release(key)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        self.player.set_position(x, y)
+
+    def make_walls(self):
+        wall = arcade.Sprite(
+            ":resources:images/tiles/grassMid.png",
         )
 
-        self.player_list.append(self.player)
+        wall.width = 1000
+        wall.center_x = 1000 / 2
+        wall.center_y = 0
 
-        self.sprite_width = None
-        self.sprite_height = None
+        self.wall_list = arcade.SpriteList()
+        self.wall_list.append(wall)
 
-        self.keys_pressed = {
-            arcade.key.D: False,
-            arcade.key.A: False,
-            arcade.key.SPACE: False,
-        }
-
+    def make_physics_engine(self):
         self.physics_engine = arcade.PhysicsEnginePlatformer(
             self.player, self.wall_list, GRAVITY
         )
 
-        t = threading.Thread(target=self.recv_info, daemon=True)
-        t.start()
 
-    def on_draw(self):
-        """
-        Render the screen.
-        """
+class Online_Game(Base_Game):
+    def __init__(self, player1, player2, socket):
+        super().__init__(player1)
+        self.player2 = Online_Player(player2)
 
-        # This command should happen before we start drawing. It will clear
-        # the screen to the background color, and erase what we drew last frame
-        arcade.start_render()
-        self.player2.draw()
+        self.network = Network(socket, self.on_recv, self.on_send)
+        self.network.run()
 
-        # Call draw() on all your sprite lists below
+    def on_send(self):
+        return {
+            "player_data": (
+                self.player.center_x,
+                self.player.center_y,
+                self.player.texture_number,
+            )
+        }
 
-        arcade.draw_text(
-            "coins: " + str(self.player.get_coins()),
-            20,
-            self.display_height - 40,
-            arcade.color.GOLD,
-            20,
-        )
+    def on_recv(self, database):
+        for key in database:
+            player_data = database[key]["player_data"]
 
-        self.player_list.draw()
-        self.coin_list.draw()
-        self.wall_list.draw()
+        print(player_data)
+
+        # set_data() could kinda animate the player2 over to the new pos so it doesnt look choppy
+        self.player2.set_data(player_data[0], player_data[1], player_data[2])
 
     def on_update(self, delta_time):
-        """
-        All the logic to move, and the game logic goes here.
-        Normally, you'll call update() on the sprite lists that
-        need it.
-        """
-        self.player_list.update()
+        super().on_update(delta_time)
+        self.player2.update()
 
-        self.player_list.update_animation()
+    def on_draw(self):
+        super().on_draw()
+        self.player2.draw()
 
-        self.physics_engine.update()
 
-        if self.keys_pressed[arcade.key.D] and not self.keys_pressed[arcade.key.A]:
-            self.player.move(1)
-        elif self.keys_pressed[arcade.key.A] and not self.keys_pressed[arcade.key.D]:
-            self.player.move(-1)
-        else:
-            self.player.stop()
+class Boolean_Input:
+    def __init__(self):
+        self.inputs = {None: None}
 
-        if self.keys_pressed[arcade.key.SPACE]:
-            self.player.jump(self.physics_engine.can_jump())
+    def get(self, input_name):
+        return self.inputs.get(input_name, None)
 
-        coins_hit_list = arcade.check_for_collision_with_list(
-            self.player, self.coin_list
+    def press(self, input_name):
+        self.inputs[input_name] = True
+
+    def release(self, input_name):
+        self.inputs[input_name] = False
+
+
+class Base_Player(arcade.Sprite):
+    def __init__(self, character_url):
+        super().__init__()
+        self.texturess = self.make_players_textures(character_url)
+        self.change_texture(0, 0, 0)
+
+    def change_texture(self, is_walk, index, direction):
+        self.texture_number = is_walk, index, direction
+        self.texture = self.texturess[is_walk][index][direction]
+
+    def make_players_textures(self, url):
+        return (
+            (arcade.load_texture_pair(url + "idle.png")),
+            (arcade.load_texture_pair(url + "jump.png")),
+            (arcade.load_texture_pair(url + "fall.png")),
+        ), (
+            (arcade.load_texture_pair(url + "walk0.png")),
+            (arcade.load_texture_pair(url + "walk2.png")),
+            (arcade.load_texture_pair(url + "walk3.png")),
+            (arcade.load_texture_pair(url + "walk4.png")),
+            (arcade.load_texture_pair(url + "walk5.png")),
+            (arcade.load_texture_pair(url + "walk6.png")),
+            (arcade.load_texture_pair(url + "walk7.png")),
         )
 
-        for coin in coins_hit_list:
-            coin.effect(self.player)
-            coin.remove_from_sprite_lists()
 
-    def send_our_pos(self):
-        self.socket.send(self.player.get_formatted_pos().encode("ascii"))
+class Controllable_Player(Base_Player):
+    def __init__(self, character_url):
+        super().__init__(character_url)
 
-    def recv_info(self):
-        try:
-            while True:
-                self.send_our_pos()
-                player_pos = self.socket.recv(13)
-                player_pos = player_pos.decode("ascii")
-                print(player_pos)
+        # left = 0, right = 1
+        self.direction = 0
+        self.max_speed = 3
+        self.animation_speed_reducer = 10
+        self.walk_index = 0
+        self.friction = 0.5
+        self.acceleration_reducer = 2
+        self.jump_power = 10
 
-                player_pos = eval(player_pos)
+        self.center_x = 500
+        self.center_y = 500
 
-                self.player2.center_x, self.player2.center_y = player_pos
-        except ConnectionResetError:
-            print("Other Player has left")
-            self.leave()
+        self.change_texture(0, 0, 0)
+        self.load_sounds()
+
+    def load_sounds(self):
+        self.jump_sound = arcade.load_sound(":resources:sounds/jump1.wav")
+
+    def update_texture(self, on_ground):
+        self.update_direction()
+
+        # update 0 = idle, 1 = jump, 2 =fall
+        if self.change_y > 0:
+            self.change_texture(0, 1, self.direction)
+
+        elif self.change_y < 0:
+            self.change_texture(0, 2, self.direction)
+
+        elif 0.01 > self.change_x > -0.01 and on_ground():
+            self.change_texture(0, 0, self.direction)
+            self.reset_walk()
+
+        else:
+            self.update_walk()
+
+    def update_walk(self):
+        self.walk_index += 1
+
+        if self.walk_index > len(self.texturess[1]) * self.animation_speed_reducer - 1:
+            self.reset_walk()
+
+        frame = self.walk_index // self.animation_speed_reducer
+
+        self.change_texture(1, frame, self.direction)
+
+    def update_direction(self):
+        if self.change_x == 0:
             return
+        elif self.change_x > 0:
+            self.direction = 0
+        else:
+            self.direction = 1
 
-    def leave(self):
-        print("Exiting...")
-        self.client_socket.close()
-        arcade.exit()
+    def reset_walk(self):
+        self.walk_index = 0
 
-    def on_key_press(self, key, key_modifiers):
-        self.keys_pressed[key] = True
+    def jump(self):
+        self.change_y += self.jump_power
+        arcade.play_sound(self.jump_sound)
 
-    def on_key_release(self, key, key_modifiers):
-        self.keys_pressed[key] = False
+    def movement_math(self):
+        return (abs(self.change_x) - self.max_speed) / self.acceleration_reducer
 
-    def on_mouse_motion(self, x, y, delta_x, delta_y):
-        """
-        Called whenever the mouse moves.
-        """
-        pass
+    def move_left(self):
+        self.change_x += self.movement_math()
 
-    def on_mouse_press(self, x, y, button, key_modifiers):
-        self.player.center_x = x
-        self.player.center_y = y
+    def move_right(self):
+        self.change_x -= self.movement_math()
 
-    def on_mouse_release(self, x, y, button, key_modifiers):
-        """
-        Called when a user releases a mouse button.
-        """
-        pass
+    def stop_moving(self):
+        self.change_x *= self.friction
 
-    def add_sprite(self, sprite, x, y):
-        sprite.width = self.sprite_width
-        sprite.height = self.sprite_height
-        sprite.center_x = x * self.sprite_width
-        sprite.center_y = (self.map_height - y) * self.sprite_height
-        return sprite
 
-    def load_map(self, map_file):
+class Online_Player(Base_Player):
+    def update(self):
+        super().update()
+        self.change_texture(*self.texture_number)
 
-        # find longest line and how many lines
-        with open(map_file) as map:
-            biggest = 0
+    def set_data(self, x, y, texture_number):
+        self.center_x = x
+        self.center_y = y
 
-            for i, line in enumerate(map):
-                if len(line) > biggest:
-                    biggest = len(line)
-
-            self.map_height = i
-            self.sprite_height = self.display_height / self.map_height
-
-            self.map_width = biggest - 1
-            self.sprite_width = self.display_width / self.map_width
-
-        with open(map_file) as map:
-
-            for y, line in enumerate(map):
-                for x, letter in enumerate(line):
-
-                    if letter == "X":
-                        self.wall_list.append(
-                            self.add_sprite(
-                                arcade.Sprite(":resources:images/tiles/grassMid.png"),
-                                x,
-                                y,
-                            )
-                        )
-
-                    elif letter == "C":
-                        self.coin_list.append(self.add_sprite(Coin(0, 0), x, y))
+        self.texture_number = texture_number
 
 
 def main():
-    """Main method"""
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     # player2_ip = "162.196.90.150"
-    player2_ip = sys.argv[1]
+    ip = sys.argv[1]
 
-    # local ip for local connections
-    print(socket.gethostbyname(socket.gethostname()))
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     print("Trying to connect...")
-    client_socket.connect((player2_ip, 5555))
+    server_socket.connect((ip, 5555))
     print("Connected!")
 
-    display_width, display_height = arcade.window_commands.get_display_size()
-    display_width = int(display_width * 0.8)
-    display_height = int(display_height * 0.8)
+    window = arcade.Window(800, 600, "Octopus Game")
+    screen = Character_Chooser(server_socket)
 
-    window = arcade.Window(display_width, display_height, "Octopus Game")
-
-    # game = Octopus_Game(display_width, display_height, "maleAdventurer")
-    # game.setup()
-
-    start_screen = Start_Screen(window, display_width, display_height, client_socket)
-    start_screen.setup()
-    window.show_view(start_screen)
-
+    window.show_view(screen)
     arcade.run()
 
 
 if __name__ == "__main__":
     main()
+    # window = arcade.Window(800, 600, "Octopus Game")
+    # g = Base_Game(
+    #     ":resources:images/animated_characters/male_adventurer/maleAdventurer_"
+    # )
+
+    # window.show_view(g)
+    # arcade.run()
