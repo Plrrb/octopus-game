@@ -1,9 +1,8 @@
 import pickle
 import socket
+import sys
 import threading
 import time
-
-RECV_BYTE_SIZE = 2048
 
 
 class Network:
@@ -12,10 +11,6 @@ class Network:
 
         self.on_recv = on_recv
         self.on_send = on_send
-
-        self.incoming_channels = {}
-
-        self.outgoing_channels = {}
 
     def run(self):
         self.running = True
@@ -35,26 +30,27 @@ class Network:
 
                 self.on_recv(d)
 
-                # time.sleep(1)
+                time.sleep(1)
 
         except socket.error:
-            print("Server Error!")
+            print("Error!")
             self.socket.close()
-            self.stop()
 
     def recv_data(self):
-        data = self.socket.recv(RECV_BYTE_SIZE)
+        data = self.socket.recv(512)
         data = pickle.loads(data)
-        self.incoming_channels.update(data)
 
         return data
 
     def send_data(self, data):
-        self.outgoing_channels.update(data)
-        data = pickle.dumps(self.outgoing_channels)
-
+        data = pickle.dumps(data)
         self.socket.send(data)
 
     @staticmethod
     def get_local_ip():
         return socket.gethostbyname(socket.gethostname())
+
+
+def auto_connect(ip):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.connect((ip, 5555))

@@ -15,6 +15,8 @@ import sys
 import arcade
 import arcade.gui
 
+WINDOW_WIDTH = 1600
+WINDOW_HEIGHT = 1000
 GRAVITY = 9.8 / 20
 
 from network import Network
@@ -44,14 +46,18 @@ class Character_Chooser(arcade.View):
         self.network.run()
 
     def on_send(self):
-        # this could be is some higher class that owns this class's instance and sends this empty player_data
-        return {"character": self.char, "player_data": (0, 0, (0, 0, 0))}
+        return {"character": self.char}
 
     def on_recv(self, database):
-        # gets the other client jankeyly
+        print(database)
 
-        for player in database:
-            character = database[player]["character"]
+        if 0 in database and "character" in database[0]:
+            character = database[0]["character"]
+
+        elif 1 in database and "character" in database[1]:
+            character = database[1]["character"]
+        else:
+            return
 
         game = Online_Game(self.char, character, self.network.socket)
 
@@ -91,9 +97,12 @@ class Base_Game(arcade.View):
         super().__init__()
 
         self.controls = Boolean_Input()
+        self.wall_list = arcade.SpriteList()
 
-        self.make_walls()
         self.player = Controllable_Player(character_url)
+        self.time_since_last_shot = 0
+
+        self.load_map("octopus-game/map.txt")
         self.make_physics_engine()
 
     def on_draw(self):
@@ -106,9 +115,18 @@ class Base_Game(arcade.View):
         self.physics_engine.update()
         self.update_player_contols()
 
+        self.player.bullet_collision_check(self.wall_list)
+        # hits = self.player.bullet_collision_check(self.player_list)
+
+        # for player in hits:
+        #     player.die()
+
+        self.player.bullet_collision_check(self.wall_list)
+
         self.player.update()
         self.player.update_texture(self.cached_player_can_jump)
         self.player_can_jump_was_cached = False
+        self.time_since_last_shot += delta_time
 
     def cached_player_can_jump(self):
         if not self.player_can_jump_was_cached:
@@ -138,24 +156,52 @@ class Base_Game(arcade.View):
         self.controls.release(key)
 
     def on_mouse_press(self, x, y, button, modifiers):
-        self.player.set_position(x, y)
-
-    def make_walls(self):
-        wall = arcade.Sprite(
-            ":resources:images/tiles/grassMid.png",
-        )
-
-        wall.width = 1000
-        wall.center_x = 1000 / 2
-        wall.center_y = 0
-
-        self.wall_list = arcade.SpriteList()
-        self.wall_list.append(wall)
+        print(self.time_since_last_shot)
+        if self.time_since_last_shot > 1:
+            self.player.shoot()
+            self.time_since_last_shot = 0
 
     def make_physics_engine(self):
         self.physics_engine = arcade.PhysicsEnginePlatformer(
             self.player, self.wall_list, GRAVITY
         )
+
+    def add_sprite(self, sprite, x, y):
+        sprite.width = self.sprite_width
+        sprite.height = self.sprite_height
+        sprite.center_x = x * self.sprite_width
+        sprite.center_y = (self.map_height - y) * self.sprite_height
+        return sprite
+
+    def load_map(self, map_file):
+
+        # find longest line and how many lines
+        with open(map_file) as map:
+            biggest = 0
+
+            for i, line in enumerate(map):
+                if len(line) > biggest:
+                    biggest = len(line)
+
+            self.map_height = i
+            self.sprite_height = WINDOW_WIDTH / self.map_height
+
+            self.map_width = biggest - 1
+            self.sprite_width = WINDOW_HEIGHT / self.map_width
+
+        with open(map_file) as map:
+
+            for y, line in enumerate(map):
+                for x, letter in enumerate(line):
+
+                    if letter == "X":
+                        self.wall_list.append(
+                            self.add_sprite(
+                                arcade.Sprite(":resources:images/tiles/grassMid.png"),
+                                x,
+                                y,
+                            )
+                        )
 
 
 class Online_Game(Base_Game):
@@ -233,6 +279,19 @@ class Base_Player(arcade.Sprite):
         )
 
 
+class Bullet(arcade.Sprite):
+    def __init__(self, start_x, start_y, vel_x, vel_y):
+        super().__init__(":resources:images/enemies/saw.png", scale=0.5)
+        self.center_x = start_x
+        self.center_y = start_y
+
+        self.change_x = vel_x
+        self.change_y = vel_y
+
+    def get_position(self):
+        return self.center_x, self.center_y
+
+
 class Controllable_Player(Base_Player):
     def __init__(self, character_url):
         super().__init__(character_url)
@@ -249,8 +308,43 @@ class Controllable_Player(Base_Player):
         self.center_x = 500
         self.center_y = 500
 
+        self.bullets = arcade.SpriteList()
+
         self.change_texture(0, 0, 0)
         self.load_sounds()
+
+    def shoot(self):
+        if self.direction == 0:
+            vel_y = 10
+        else:
+            vel_y = -10
+
+        b = Bullet(self.center_x, self.center_y, vel_y, 0)
+        self.bullets.append(b)
+
+    def draw(self):
+        super().draw()
+        self.bullets.draw()
+
+    def get_bullet_positions(self):
+        print((bullet.get_position() for bullet in self.bullets))
+        return (bullet.get_position() for bullet in self.bullets)
+
+    def bullet_collision_check(self, sprite_list):
+        bullet_hits = []
+
+        for bullet in self.bullets:
+            hit = arcade.check_for_collision_with_list(bullet, sprite_list)
+
+            if hit != []:
+                bullet_hits.append(bullet)
+
+        for hit in bullet_hits:
+            self.bullets.remove(hit)
+
+    def update(self):
+        super().update()
+        self.bullets.update()
 
     def load_sounds(self):
         self.jump_sound = arcade.load_sound(":resources:sounds/jump1.wav")
@@ -311,15 +405,35 @@ class Controllable_Player(Base_Player):
 
 
 class Online_Player(Base_Player):
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.next_x = 0
+    #     self.next_y = 0
+    #     self.step = 0
+
     def update(self):
         super().update()
         self.change_texture(*self.texture_number)
+
+        # self.center_x = self.next_x * self.step
+        # self.center_y = self.next_y * self.step
+
+        # self.step += 0.01
 
     def set_data(self, x, y, texture_number):
         self.center_x = x
         self.center_y = y
 
         self.texture_number = texture_number
+
+        self.bullets = arcade.SpriteList()
+
+        # for bullet in bullets:
+        #     self.bullets.append(Bullet(bullet[0], bullet[1], 0, 0))
+
+        # self.step = 0
+        # self.next_x = x
+        # self.next_y = y
 
 
 def main():
@@ -341,7 +455,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # window = arcade.Window(800, 600, "Octopus Game")
+    # window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, "Octopus Game")
     # g = Base_Game(
     #     ":resources:images/animated_characters/male_adventurer/maleAdventurer_"
     # )
