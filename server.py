@@ -3,6 +3,8 @@ import socket
 import threading
 import time
 
+RECV_BYTE_SIZE = 2048
+
 
 class Server:
     def __init__(self):
@@ -23,21 +25,30 @@ class Server:
             conn, addr = self.socket.accept()
             print(addr[0], "Connected")
 
-            c = self.Client(conn, self.clients_connected, self.database)
+            self.clients_connected += 1
+
+            c = self.Client(conn, self)
             t = threading.Thread(target=c.listen)
             t.start()
 
-            self.clients_connected += 1
-
     class Client:
-        def __init__(self, socket, index, database):
-            self.index = index
+        def __init__(self, socket, server):
+            self.index = server.clients_connected
             self.socket = socket
-            self.database = database
-            self.database[self.index] = {}
+            self.database = server.database
+            self.server = server
 
         def listen(self):
             try:
+                data = self.recv_data()
+
+                self.database[self.index] = data
+
+                while True:
+                    if self.get_database_exclude_self() != {}:
+                        self.send_data(self.get_database_exclude_self())
+                        break
+
                 while True:
                     data = self.recv_data()
 
@@ -45,34 +56,34 @@ class Server:
 
                     self.send_data(self.get_database_exclude_self())
 
-            except socket.error:
+                    # time.sleep(1)
+
+            except ConnectionResetError:
+                self.conn.close()
                 print(self.index, "has left")
-                self.socket.close()
 
         def get_database_exclude_self(self):
-            return {i: self.database[i] for i in self.database if i != self.index}
+            d = self.database.copy()
+            del d[self.index]
+            return d
 
         def send_data(self, data):
             data = pickle.dumps(data)
             self.socket.send(data)
 
         def recv_data(self):
-            data = self.socket.recv(512)
+            data = self.socket.recv(RECV_BYTE_SIZE)
             data = pickle.loads(data)
-
             return data
 
 
 def main():
     s = Server()
     s.run()
-    print("server local ip", socket.gethostbyname(socket.gethostname()))
+    print(socket.gethostbyname(socket.gethostname()))
 
-    try:
-        while True:
-            time.sleep(10)
-    except KeyboardInterrupt:
-        print("finished")
+    while True:
+        time.sleep(10)
 
 
 if __name__ == "__main__":
