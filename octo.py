@@ -371,12 +371,13 @@ class Base_Player(arcade.Sprite):
         bullet_hits = []
 
         for bullet in self.bullets:
-            hit = arcade.check_for_collision_with_list(bullet, sprite_list)
-
-            if hit != []:
+            if arcade.check_for_collision_with_list(
+                bullet, sprite_list
+            ) or not bullet.inbounds(WINDOW_WIDTH, WINDOW_HEIGHT):
                 bullet_hits.append(bullet)
 
         for hit in bullet_hits:
+            print("bullet deleted")
             self.bullets.remove(hit)
 
 
@@ -393,6 +394,14 @@ class Bullet(arcade.Sprite):
 
     def get_position(self):
         return self.center_x, self.center_y
+
+    def inbounds(self, width, height):
+        return (
+            self.center_x >= 0
+            and self.center_y >= 0
+            and self.center_x <= width
+            and self.center_y <= height
+        )
 
 
 class Controllable_Player(Base_Player):
