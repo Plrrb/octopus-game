@@ -49,7 +49,6 @@ class Character_Chooser(arcade.View):
         return {"character": self.char}
 
     def on_recv(self, database):
-        print(database)
 
         if 0 in database and "character" in database[0]:
             character = database[0]["character"]
@@ -218,6 +217,7 @@ class Online_Game(Base_Game):
                 self.player.center_x,
                 self.player.center_y,
                 self.player.texture_number,
+                self.player.get_bullet_positions(),
             )
         }
 
@@ -227,9 +227,9 @@ class Online_Game(Base_Game):
                 return
             else:
                 player_data = database[key]["player_data"]
-                self.player2.set_data(player_data[0], player_data[1], player_data[2])
-
-        print(player_data)
+                self.player2.set_data(
+                    player_data[0], player_data[1], player_data[2], player_data[3]
+                )
 
         # set_data() could kinda animate the player2 over to the new pos so it doesnt look choppy
 
@@ -261,6 +261,14 @@ class Base_Player(arcade.Sprite):
         super().__init__()
         self.texturess = self.make_players_textures(character_url)
         self.change_texture(0, 0, 0)
+        self.bullets = arcade.SpriteList()
+
+    def draw(self):
+        super().draw()
+        self.bullets.draw()
+
+    def update(self):
+        self.bullets.update()
 
     def change_texture(self, is_walk, index, direction):
         self.texture_number = is_walk, index, direction
@@ -280,6 +288,22 @@ class Base_Player(arcade.Sprite):
             (arcade.load_texture_pair(url + "walk6.png")),
             (arcade.load_texture_pair(url + "walk7.png")),
         )
+
+    def get_bullet_positions(self):
+        # print((bullet.get_position() for bullet in self.bullets))
+        return [bullet.get_position() for bullet in self.bullets]
+
+    def bullet_collision_check(self, sprite_list):
+        bullet_hits = []
+
+        for bullet in self.bullets:
+            hit = arcade.check_for_collision_with_list(bullet, sprite_list)
+
+            if hit != []:
+                bullet_hits.append(bullet)
+
+        for hit in bullet_hits:
+            self.bullets.remove(hit)
 
 
 class Bullet(arcade.Sprite):
@@ -311,8 +335,6 @@ class Controllable_Player(Base_Player):
         self.center_x = 500
         self.center_y = 500
 
-        self.bullets = arcade.SpriteList()
-
         self.change_texture(0, 0, 0)
         self.load_sounds()
 
@@ -325,29 +347,11 @@ class Controllable_Player(Base_Player):
         b = Bullet(self.center_x, self.center_y, vel_y, 0)
         self.bullets.append(b)
 
-    def draw(self):
-        super().draw()
-        self.bullets.draw()
+    # def draw(self):
+    #     super().draw()
 
-    def get_bullet_positions(self):
-        print((bullet.get_position() for bullet in self.bullets))
-        return (bullet.get_position() for bullet in self.bullets)
-
-    def bullet_collision_check(self, sprite_list):
-        bullet_hits = []
-
-        for bullet in self.bullets:
-            hit = arcade.check_for_collision_with_list(bullet, sprite_list)
-
-            if hit != []:
-                bullet_hits.append(bullet)
-
-        for hit in bullet_hits:
-            self.bullets.remove(hit)
-
-    def update(self):
-        super().update()
-        self.bullets.update()
+    # def update(self):
+    #     super().update()
 
     def load_sounds(self):
         self.jump_sound = arcade.load_sound(":resources:sounds/jump1.wav")
@@ -412,7 +416,7 @@ class Online_Player(Base_Player):
         super().update()
         self.change_texture(*self.texture_number)
 
-    def set_data(self, x, y, texture_number):
+    def set_data(self, x, y, texture_number, bullets_pos):
         self.center_x = x
         self.center_y = y
 
@@ -420,8 +424,10 @@ class Online_Player(Base_Player):
 
         self.bullets = arcade.SpriteList()
 
-        # for bullet in bullets:
-        #     self.bullets.append(Bullet(bullet[0], bullet[1], 0, 0))
+        for pos in bullets_pos:
+            self.bullets.append(
+                Bullet(pos[0], pos[1], 0, 0),
+            )
 
 
 def main():
