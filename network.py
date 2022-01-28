@@ -30,7 +30,7 @@ class Network:
 
                 self.on_recv(d)
 
-                time.sleep(1)
+                # time.sleep(1)
 
         except socket.error:
             print("Error!")

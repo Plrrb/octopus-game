@@ -408,20 +408,9 @@ class Controllable_Player(Base_Player):
 
 
 class Online_Player(Base_Player):
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.next_x = 0
-    #     self.next_y = 0
-    #     self.step = 0
-
     def update(self):
         super().update()
         self.change_texture(*self.texture_number)
-
-        # self.center_x = self.next_x * self.step
-        # self.center_y = self.next_y * self.step
-
-        # self.step += 0.01
 
     def set_data(self, x, y, texture_number):
         self.center_x = x
@@ -433,10 +422,6 @@ class Online_Player(Base_Player):
 
         # for bullet in bullets:
         #     self.bullets.append(Bullet(bullet[0], bullet[1], 0, 0))
-
-        # self.step = 0
-        # self.next_x = x
-        # self.next_y = y
 
 
 def main():
