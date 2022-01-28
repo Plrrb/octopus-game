@@ -11,15 +11,86 @@
 
 import socket
 import sys
-
+import timeit
 import arcade
 import arcade.gui
 
-WINDOW_WIDTH = 1600
-WINDOW_HEIGHT = 1000
-GRAVITY = 9.8 / 20
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+GRAVITY = 9.8 / 40
 
 from network import Network
+
+
+class Framerate:
+    def __init__(self):
+        # --- Variables for our statistics
+
+        # Time for on_update
+        self.processing_time = 0
+
+        # Time for on_draw
+        self.draw_time = 0
+
+        # Variables used to calculate frames per second
+        self.frame_count = 0
+        self.fps_start_timer = None
+        self.fps = None
+
+    def start_frame(self):
+        # Start timing how long this takes
+        self.start_time = timeit.default_timer()
+
+        # --- Calculate FPS
+
+        fps_calculation_freq = 60
+        # Once every 60 frames, calculate our FPS
+        if self.frame_count % fps_calculation_freq == 0:
+            # Do we have a start time?
+            if self.fps_start_timer is not None:
+                # Calculate FPS
+                total_time = timeit.default_timer() - self.fps_start_timer
+                self.fps = fps_calculation_freq / total_time
+            # Reset the timer
+            self.fps_start_timer = timeit.default_timer()
+        # Add one to our frame count
+        self.frame_count += 1
+
+    def end_frame(self):
+        # Display timings
+        output = f"Processing time: {self.processing_time:.3f}"
+        arcade.draw_text(output, 20, WINDOW_HEIGHT - 25, arcade.color.BLACK, 18)
+
+        output = f"Drawing time: {self.draw_time:.3f}"
+        arcade.draw_text(output, 20, WINDOW_HEIGHT - 50, arcade.color.BLACK, 18)
+
+        if self.fps is not None:
+            output = f"FPS: {self.fps:.0f}"
+            arcade.draw_text(output, 20, WINDOW_HEIGHT - 75, arcade.color.BLACK, 18)
+
+        # Stop the draw timer, and calculate total on_draw time.
+        self.draw_time = timeit.default_timer() - self.start_time
+
+    def start_update(self):
+        self.start_time = timeit.default_timer()
+
+    def end_update(self):
+        self.processing_time = timeit.default_timer() - self.start_time
+
+    def draw(self):
+        # Display timings
+        output = f"Processing time: {self.processing_time:.3f}"
+        arcade.draw_text(output, 20, WINDOW_HEIGHT - 25, arcade.color.BLACK, 18)
+
+        output = f"Drawing time: {self.draw_time:.3f}"
+        arcade.draw_text(output, 20, WINDOW_HEIGHT - 50, arcade.color.BLACK, 18)
+
+        if self.fps is not None:
+            output = f"FPS: {self.fps:.0f}"
+            arcade.draw_text(output, 20, WINDOW_HEIGHT - 75, arcade.color.BLACK, 18)
+
+        # Stop the draw timer, and calculate total on_draw time.
+        self.draw_time = timeit.default_timer() - self.start_time
 
 
 class Character_Chooser(arcade.View):
@@ -103,14 +174,19 @@ class Base_Game(arcade.View):
 
         self.load_map("map.txt")
         self.make_physics_engine()
+        self.fps_counter = Framerate()
 
     def on_draw(self):
+        self.fps_counter.start_frame()
         arcade.start_render()
+        self.fps_counter.draw()
 
         self.player.draw()
         self.wall_list.draw()
+        self.fps_counter.end_frame()
 
     def on_update(self, delta_time):
+        self.fps_counter.start_update()
         self.physics_engine.update()
         self.update_player_contols()
 
@@ -126,6 +202,7 @@ class Base_Game(arcade.View):
         self.player.update_texture(self.cached_player_can_jump)
         self.player_can_jump_was_cached = False
         self.time_since_last_shot += delta_time
+        self.fps_counter.end_update()
 
     def cached_player_can_jump(self):
         if not self.player_can_jump_was_cached:
@@ -227,9 +304,7 @@ class Online_Game(Base_Game):
                 return
             else:
                 player_data = database[key]["player_data"]
-                self.player2.set_data(
-                    player_data[0], player_data[1], player_data[2], player_data[3]
-                )
+                self.player2.set_data(*player_data)
 
         # set_data() could kinda animate the player2 over to the new pos so it doesnt look choppy
 
@@ -290,7 +365,6 @@ class Base_Player(arcade.Sprite):
         )
 
     def get_bullet_positions(self):
-        # print((bullet.get_position() for bullet in self.bullets))
         return [bullet.get_position() for bullet in self.bullets]
 
     def bullet_collision_check(self, sprite_list):
@@ -307,6 +381,8 @@ class Base_Player(arcade.Sprite):
 
 
 class Bullet(arcade.Sprite):
+    # __slots__ = ["center_x", "center_y", "change_x", "change_y"]
+
     def __init__(self, start_x, start_y, vel_x, vel_y):
         super().__init__(":resources:images/enemies/saw.png", scale=0.5)
         self.center_x = start_x
@@ -325,7 +401,7 @@ class Controllable_Player(Base_Player):
 
         # left = 0, right = 1
         self.direction = 0
-        self.max_speed = 3
+        self.max_speed = 5
         self.animation_speed_reducer = 10
         self.walk_index = 0
         self.friction = 0.5
