@@ -12,6 +12,7 @@
 import socket
 import sys
 import timeit
+import time
 import arcade
 import arcade.gui
 
@@ -20,6 +21,19 @@ WINDOW_HEIGHT = 600
 GRAVITY = 9.8 / 40
 
 from network import Network
+
+
+def func_timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+
+        func(*args, **kwargs)
+
+        end = time.perf_counter() - start
+
+        print(func.__name__, end)
+
+    return wrapper
 
 
 class Framerate:
@@ -233,7 +247,6 @@ class Base_Game(arcade.View):
         self.controls.release(key)
 
     def on_mouse_press(self, x, y, button, modifiers):
-        print(self.time_since_last_shot)
         if self.time_since_last_shot > 1:
             self.player.shoot()
             self.time_since_last_shot = 0
@@ -380,7 +393,6 @@ class Base_Player(arcade.Sprite):
                 bullet_hits.append(bullet)
 
         for hit in bullet_hits:
-            print("bullet deleted")
             self.bullets.remove(hit)
 
 
@@ -438,7 +450,6 @@ class Controllable_Player(Base_Player):
 
     # def update(self):
     #     super().update()
-
     def load_sounds(self):
         self.jump_sound = arcade.load_sound(":resources:sounds/jump1.wav")
 
@@ -498,10 +509,12 @@ class Controllable_Player(Base_Player):
 
 
 class Online_Player(Base_Player):
+    @func_timer
     def update(self):
         super().update()
         self.change_texture(*self.texture_number)
 
+    @func_timer
     def set_data(self, x, y, texture_number, bullets_pos):
         self.center_x = x
         self.center_y = y
@@ -544,4 +557,5 @@ def game_with_no_networking():
 
 
 if __name__ == "__main__":
-    game_with_no_networking()
+    main()
+    # game_with_no_networking()
