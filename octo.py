@@ -165,6 +165,7 @@ class Character_Chooser(arcade.View):
 class Base_Game(arcade.View):
     def __init__(self, character_url):
         super().__init__()
+        arcade.set_background_color(arcade.color.ORANGE_PEEL)
 
         self.controls = Boolean_Input()
         self.wall_list = arcade.SpriteList()
@@ -318,6 +319,8 @@ class Online_Game(Base_Game):
 
 
 class Boolean_Input:
+    __slots__ = ("inputs",)
+
     def __init__(self):
         self.inputs = {None: None}
 
@@ -382,8 +385,6 @@ class Base_Player(arcade.Sprite):
 
 
 class Bullet(arcade.Sprite):
-    # __slots__ = ["center_x", "center_y", "change_x", "change_y"]
-
     def __init__(self, start_x, start_y, vel_x, vel_y):
         super().__init__(":resources:images/enemies/saw.png", scale=0.5)
         self.center_x = start_x
@@ -532,12 +533,15 @@ def main():
     arcade.run()
 
 
-if __name__ == "__main__":
-    main()
-    # window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, "Octopus Game")
-    # g = Base_Game(
-    #     ":resources:images/animated_characters/male_adventurer/maleAdventurer_"
-    # )
+def game_with_no_networking():
+    window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, "Octopus Game")
+    g = Base_Game(
+        ":resources:images/animated_characters/male_adventurer/maleAdventurer_"
+    )
 
-    # window.show_view(g)
-    # arcade.run()
+    window.show_view(g)
+    arcade.run()
+
+
+if __name__ == "__main__":
+    game_with_no_networking()
