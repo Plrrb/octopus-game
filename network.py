@@ -9,11 +9,13 @@ def func_timer(func):
     def wrapper(*args, **kwargs):
         start = time.perf_counter()
 
-        func(*args, **kwargs)
+        result = func(*args, **kwargs)
 
         end = time.perf_counter() - start
 
         print(func.__name__, end)
+
+        return result
 
     return wrapper
 
@@ -34,7 +36,6 @@ class Network:
     def stop(self):
         self.running = False
 
-    @func_timer
     def listen(self):
         try:
             while self.running:
