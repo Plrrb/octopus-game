@@ -379,6 +379,7 @@ class Base_Player(arcade.Sprite):
         self.change_texture(0, 0, 0)
         self.bullets = arcade.SpriteList()
         self.health = 100
+        self.hit_sound = arcade.load_sound(":resources:sounds/hit5.wav")
 
     def draw(self):
         super().draw()
@@ -413,16 +414,17 @@ class Base_Player(arcade.Sprite):
         self.health -= value
 
         if self.health <= 0:
-            self.health = 0
             self.die()
 
     def die(self):
-        # hit5.wav
         print("i died")
 
     def check_for_hit_with_bullets(self, bullets):
         hits = arcade.check_for_collision_with_list(self, bullets)
-        self.sub_health(DAMAGE * len(hits))
+
+        if len(hits) > 0:
+            self.sub_health(DAMAGE * len(hits))
+            self.hit_sound.play()
 
         return hits
 
