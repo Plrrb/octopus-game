@@ -19,6 +19,8 @@ import arcade.gui
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 GRAVITY = 9.8 / 40
+DAMAGE = 10
+
 
 from network import Network
 
@@ -27,11 +29,13 @@ def func_timer(func):
     def wrapper(*args, **kwargs):
         start = time.perf_counter()
 
-        func(*args, **kwargs)
+        result = func(*args, **kwargs)
 
         end = time.perf_counter() - start
 
         print(func.__name__, end)
+
+        return result
 
     return wrapper
 
@@ -192,24 +196,27 @@ class Base_Game(arcade.View):
         self.fps_counter = Framerate()
 
     def on_draw(self):
-        self.fps_counter.start_frame()
+        # self.fps_counter.start_frame()
         arcade.start_render()
-        self.fps_counter.draw()
+        # self.fps_counter.draw()
 
-        self.player.draw()
         self.wall_list.draw()
-        self.fps_counter.end_frame()
+        self.draw_health_bar(50, WINDOW_HEIGHT - 15, self.player.health)
+        self.player.draw()
+
+        # self.fps_counter.end_frame()
+
+    def draw_health_bar(self, x, y, health):
+        arcade.draw_rectangle_filled(x, y, 100, 30, arcade.color.RED)
+
+        arcade.draw_rectangle_filled(
+            x - (100 - health), y, health - (100 - health), 30, arcade.color.GREEN
+        )
 
     def on_update(self, delta_time):
         self.fps_counter.start_update()
         self.physics_engine.update()
         self.update_player_contols()
-
-        self.player.bullet_collision_check(self.wall_list)
-        # hits = self.player.bullet_collision_check(self.player_list)
-
-        # for player in hits:
-        #     player.die()
 
         self.player.bullet_collision_check(self.wall_list)
 
@@ -309,7 +316,8 @@ class Online_Game(Base_Game):
                 self.player.center_y,
                 self.player.texture_number,
                 self.player.get_bullet_positions(),
-            )
+            ),
+            "other_player_data": (self.player2.health,),
         }
 
     def on_recv(self, database):
@@ -319,15 +327,25 @@ class Online_Game(Base_Game):
             else:
                 player_data = database[key]["player_data"]
                 self.player2.set_data(*player_data)
+                self.player.health = database[key]["other_player_data"][0]
 
         # set_data() could kinda animate the player2 over to the new pos so it doesnt look choppy
 
     def on_update(self, delta_time):
         super().on_update(delta_time)
+
+        # check for collsion with the online player and remove OUR Bullet
+
+        for hit in self.player2.check_for_hit_with_bullets(self.player.bullets):
+            self.player.bullets.remove(hit)
+
         self.player2.update()
+        # print("player1: ", self.player.health)
+        # print("player2: ", self.player2.health)
 
     def on_draw(self):
         super().on_draw()
+        self.draw_health_bar(WINDOW_WIDTH - 50, WINDOW_HEIGHT - 15, self.player2.health)
         self.player2.draw()
 
 
@@ -353,6 +371,7 @@ class Base_Player(arcade.Sprite):
         self.texturess = self.make_players_textures(character_url)
         self.change_texture(0, 0, 0)
         self.bullets = arcade.SpriteList()
+        self.health = 100
 
     def draw(self):
         super().draw()
@@ -382,6 +401,22 @@ class Base_Player(arcade.Sprite):
 
     def get_bullet_positions(self):
         return [bullet.get_position() for bullet in self.bullets]
+
+    def sub_health(self, value):
+        self.health -= value
+
+        if self.health <= 0:
+            self.health = 0
+            self.die()
+
+    def die(self):
+        print("i died")
+
+    def check_for_hit_with_bullets(self, bullets):
+        hits = arcade.check_for_collision_with_list(self, bullets)
+        self.sub_health(DAMAGE * len(hits))
+
+        return hits
 
     def bullet_collision_check(self, sprite_list):
         bullet_hits = []
@@ -509,12 +544,10 @@ class Controllable_Player(Base_Player):
 
 
 class Online_Player(Base_Player):
-    @func_timer
     def update(self):
         super().update()
         self.change_texture(*self.texture_number)
 
-    @func_timer
     def set_data(self, x, y, texture_number, bullets_pos):
         self.center_x = x
         self.center_y = y
@@ -539,7 +572,7 @@ def main():
     server_socket.connect((ip, 5555))
     print("Connected!")
 
-    window = arcade.Window(800, 600, "Octopus Game")
+    window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, "Octopus Game")
     screen = Character_Chooser(server_socket)
 
     window.show_view(screen)

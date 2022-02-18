@@ -5,21 +5,6 @@ import threading
 import time
 
 
-def func_timer(func):
-    def wrapper(*args, **kwargs):
-        start = time.perf_counter()
-
-        result = func(*args, **kwargs)
-
-        end = time.perf_counter() - start
-
-        print(func.__name__, end)
-
-        return result
-
-    return wrapper
-
-
 class Network:
     def __init__(self, socket, on_recv, on_send):
         self.socket = socket
@@ -51,14 +36,12 @@ class Network:
             print("Error!")
             self.socket.close()
 
-    @func_timer
     def recv_data(self):
         data = self.socket.recv(512)
         data = pickle.loads(data)
 
         return data
 
-    @func_timer
     def send_data(self, data):
         data = pickle.dumps(data)
         self.socket.send(data)
