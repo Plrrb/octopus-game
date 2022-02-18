@@ -1,20 +1,14 @@
-
-
-     C
-     C
-     C
-    XXX                        CCCCC
-   C     XXXX   XX    X   X    XXXXX
-    XX
-    C
-        XXX
-XXX
-C
-C
-C
-XXX                        CCCCC
-C     XXXX   XX    X   X    XXXXX
-XX
-C
-   XXX
-XXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+X                                               X
+X                                               X
+X                                               X
+X       XXXXXX                  XXXXXX          X
+X             X                X                X
+X              X              X                 X
+X               XXX        XXX                  X
+X                                               X
+X                      X                        X
+X                     XXX                       X
+X                    X X X                      X
+X                   X  X  X                     X
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

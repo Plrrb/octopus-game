@@ -16,8 +16,8 @@ import time
 import arcade
 import arcade.gui
 
-WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 600
+WINDOW_WIDTH = 1600
+WINDOW_HEIGHT = 1000
 GRAVITY = 9.8 / 40
 DAMAGE = 10
 
@@ -232,8 +232,12 @@ class Base_Game(arcade.View):
             return self.physics_engine.can_jump()
 
     def update_player_contols(self):
-        right = self.controls.get(arcade.key.D)
-        left = self.controls.get(arcade.key.A)
+
+        if self.controls.get(arcade.key.C):
+            self.try_shoot()
+
+        right = self.controls.get(arcade.key.D) or self.controls.get(arcade.key.RIGHT)
+        left = self.controls.get(arcade.key.A) or self.controls.get(arcade.key.LEFT)
 
         if right and not left:
             self.player.move_right()
@@ -254,6 +258,9 @@ class Base_Game(arcade.View):
         self.controls.release(key)
 
     def on_mouse_press(self, x, y, button, modifiers):
+        self.try_shoot()
+
+    def try_shoot(self):
         if self.time_since_last_shot > 1:
             self.player.shoot()
             self.time_since_last_shot = 0
@@ -281,10 +288,10 @@ class Base_Game(arcade.View):
                     biggest = len(line)
 
             self.map_height = i
-            self.sprite_height = WINDOW_WIDTH / self.map_height
+            self.sprite_height = WINDOW_HEIGHT / self.map_height
 
             self.map_width = biggest - 1
-            self.sprite_width = WINDOW_HEIGHT / self.map_width
+            self.sprite_width = WINDOW_WIDTH / self.map_width
 
         with open(map_file) as map:
 
@@ -410,6 +417,7 @@ class Base_Player(arcade.Sprite):
             self.die()
 
     def die(self):
+        # hit5.wav
         print("i died")
 
     def check_for_hit_with_bullets(self, bullets):
