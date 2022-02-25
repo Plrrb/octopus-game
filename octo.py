@@ -11,8 +11,8 @@
 
 import socket
 import sys
-import timeit
 import time
+import timeit
 import arcade
 import arcade.gui
 
@@ -436,6 +436,9 @@ class Base_Player(arcade.Sprite):
                 bullet, sprite_list
             ) or not bullet.inbounds(WINDOW_WIDTH, WINDOW_HEIGHT):
                 bullet_hits.append(bullet)
+
+        if len(bullet_hits) > 0:
+            self.hit_sound.play()
 
         for hit in bullet_hits:
             self.bullets.remove(hit)
