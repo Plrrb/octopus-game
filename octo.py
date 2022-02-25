@@ -334,7 +334,12 @@ class Online_Game(Base_Game):
             else:
                 player_data = database[key]["player_data"]
                 self.player2.set_data(*player_data)
-                self.player.sub_health(database[key]["other_player_data"][0])
+
+                if self.player.health > database[key]["other_player_data"][0]:
+
+                    self.player.sub_health(
+                        self.player.health - database[key]["other_player_data"][0]
+                    )
 
         # set_data() could kinda animate the player2 over to the new pos so it doesnt look choppy
 
