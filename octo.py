@@ -334,7 +334,7 @@ class Online_Game(Base_Game):
             else:
                 player_data = database[key]["player_data"]
                 self.player2.set_data(*player_data)
-                self.player.health = database[key]["other_player_data"][0]
+                self.player.sub_health(database[key]["other_player_data"][0])
 
         # set_data() could kinda animate the player2 over to the new pos so it doesnt look choppy
 
@@ -417,6 +417,7 @@ class Base_Player(arcade.Sprite):
             self.die()
             # could play a death sound
             return
+        self.hit_sound.play()
 
     def die(self):
         print("i died")
@@ -426,8 +427,6 @@ class Base_Player(arcade.Sprite):
 
         if len(hits) > 0:
             self.sub_health(DAMAGE * len(hits))
-            self.hit_sound.play()
-            print("played sound")
 
         return hits
 
