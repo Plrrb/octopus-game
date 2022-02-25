@@ -415,6 +415,9 @@ class Base_Player(arcade.Sprite):
 
         if self.health <= 0:
             self.die()
+            # could play a death sound
+            return
+        self.hit_box.play()
 
     def die(self):
         print("i died")
@@ -436,9 +439,6 @@ class Base_Player(arcade.Sprite):
                 bullet, sprite_list
             ) or not bullet.inbounds(WINDOW_WIDTH, WINDOW_HEIGHT):
                 bullet_hits.append(bullet)
-
-        if len(bullet_hits) > 0:
-            self.hit_sound.play()
 
         for hit in bullet_hits:
             self.bullets.remove(hit)
