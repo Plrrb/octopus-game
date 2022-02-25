@@ -417,7 +417,7 @@ class Base_Player(arcade.Sprite):
             self.die()
             # could play a death sound
             return
-        self.hit_box.play()
+        self.hit_sound.play()
 
     def die(self):
         print("i died")
