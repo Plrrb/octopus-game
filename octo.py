@@ -417,7 +417,6 @@ class Base_Player(arcade.Sprite):
             self.die()
             # could play a death sound
             return
-        self.hit_sound.play()
 
     def die(self):
         print("i died")
@@ -428,6 +427,7 @@ class Base_Player(arcade.Sprite):
         if len(hits) > 0:
             self.sub_health(DAMAGE * len(hits))
             self.hit_sound.play()
+            print("played sound")
 
         return hits
 
