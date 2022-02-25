@@ -380,11 +380,13 @@ class Boolean_Input:
 class Base_Player(arcade.Sprite):
     def __init__(self, character_url):
         super().__init__()
+        self.dead = False
         self.texturess = self.make_players_textures(character_url)
         self.change_texture(0, 0, 0)
         self.bullets = arcade.SpriteList()
         self.health = 100
         self.hit_sound = arcade.load_sound(":resources:sounds/hit5.wav")
+        self.death_sound = arcade.load_sound(":resources:sounds/gameover4.wav")
 
     def draw(self):
         super().draw()
@@ -399,17 +401,21 @@ class Base_Player(arcade.Sprite):
 
     def make_players_textures(self, url):
         return (
-            (arcade.load_texture_pair(url + "idle.png")),
-            (arcade.load_texture_pair(url + "jump.png")),
-            (arcade.load_texture_pair(url + "fall.png")),
-        ), (
-            (arcade.load_texture_pair(url + "walk0.png")),
-            (arcade.load_texture_pair(url + "walk2.png")),
-            (arcade.load_texture_pair(url + "walk3.png")),
-            (arcade.load_texture_pair(url + "walk4.png")),
-            (arcade.load_texture_pair(url + "walk5.png")),
-            (arcade.load_texture_pair(url + "walk6.png")),
-            (arcade.load_texture_pair(url + "walk7.png")),
+            (
+                (arcade.load_texture_pair(url + "idle.png")),
+                (arcade.load_texture_pair(url + "jump.png")),
+                (arcade.load_texture_pair(url + "fall.png")),
+            ),
+            (
+                (arcade.load_texture_pair(url + "walk0.png")),
+                (arcade.load_texture_pair(url + "walk2.png")),
+                (arcade.load_texture_pair(url + "walk3.png")),
+                (arcade.load_texture_pair(url + "walk4.png")),
+                (arcade.load_texture_pair(url + "walk5.png")),
+                (arcade.load_texture_pair(url + "walk6.png")),
+                (arcade.load_texture_pair(url + "walk7.png")),
+            ),
+            (arcade.load_texture_pair("dead_zombie.png"),),
         )
 
     def get_bullet_positions(self):
@@ -420,12 +426,15 @@ class Base_Player(arcade.Sprite):
 
         if self.health <= 0:
             self.die()
-            # could play a death sound
             return
         self.hit_sound.play()
 
     def die(self):
-        print("i died")
+        if self.dead:
+            return
+
+        self.dead = True
+        self.death_sound.play()
 
     def check_for_hit_with_bullets(self, bullets):
         hits = arcade.check_for_collision_with_list(self, bullets)
@@ -506,6 +515,10 @@ class Controllable_Player(Base_Player):
         self.jump_sound = arcade.load_sound(":resources:sounds/jump1.wav")
 
     def update_texture(self, on_ground):
+        if self.dead:
+            self.change_texture(2, 0, self.direction)
+            return
+
         self.update_direction()
 
         # update 0 = idle, 1 = jump, 2 =fall
