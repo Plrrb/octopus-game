@@ -415,13 +415,14 @@ class Base_Player(arcade.Sprite):
                 (arcade.load_texture_pair(url + "walk6.png")),
                 (arcade.load_texture_pair(url + "walk7.png")),
             ),
-            (arcade.load_texture_pair("dead_zombie.png"),),
+            (arcade.load_texture_pair(f"images/{url.split('/')[-1]}dead.png"),),
         )
 
     def get_bullet_positions(self):
         return [bullet.get_position() for bullet in self.bullets]
 
     def sub_health(self, value):
+        print(self.health)
         self.health -= value
 
         if self.health <= 0:
@@ -430,6 +431,7 @@ class Base_Player(arcade.Sprite):
         self.hit_sound.play()
 
     def die(self):
+        print("im dead")
         if self.dead:
             return
 
