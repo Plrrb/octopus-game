@@ -195,6 +195,8 @@ class Base_Game(arcade.View):
         self.make_physics_engine()
         self.fps_counter = Framerate()
 
+        self.game_over = False
+
     def on_draw(self):
         # self.fps_counter.start_frame()
         arcade.start_render()
@@ -204,6 +206,16 @@ class Base_Game(arcade.View):
         self.draw_health_bar(0, WINDOW_HEIGHT - 30, self.player.health)
         self.player.draw()
 
+        if self.game_over:
+            arcade.draw_text(
+                self.game_over_text,
+                (WINDOW_WIDTH / 2) - 60,
+                WINDOW_HEIGHT / 1.5,
+                font_size=30,
+                color=arcade.color.BLACK_BEAN,
+                font_name="impact",
+            )
+
         # self.fps_counter.end_frame()
 
     def draw_health_bar(self, x, y, health):
@@ -211,7 +223,7 @@ class Base_Game(arcade.View):
         arcade.draw_xywh_rectangle_filled(x, y, health, 30, arcade.color.GREEN)
 
     def on_update(self, delta_time):
-        self.fps_counter.start_update()
+        # self.fps_counter.start_update()
         self.physics_engine.update()
         self.update_player_contols()
 
@@ -221,7 +233,12 @@ class Base_Game(arcade.View):
         self.player.update_texture(self.cached_player_can_jump)
         self.player_can_jump_was_cached = False
         self.time_since_last_shot += delta_time
-        self.fps_counter.end_update()
+
+        if self.player.dead:
+            self.game_over = True
+            self.game_over_text = "YOU LOSE"
+
+        # self.fps_counter.end_update()
 
     def cached_player_can_jump(self):
         if not self.player_can_jump_was_cached:
@@ -229,6 +246,8 @@ class Base_Game(arcade.View):
             return self.physics_engine.can_jump()
 
     def update_player_contols(self):
+        if self.game_over:
+            return
 
         if self.controls.get(arcade.key.C):
             self.try_shoot()
@@ -258,6 +277,9 @@ class Base_Game(arcade.View):
         self.try_shoot()
 
     def try_shoot(self):
+        if self.game_over:
+            return
+
         if self.time_since_last_shot > 1:
             self.player.shoot()
             self.time_since_last_shot = 0
@@ -349,6 +371,10 @@ class Online_Game(Base_Game):
             self.player.bullets.remove(hit)
 
         self.player2.update()
+
+        if self.player2.dead:
+            self.game_over = True
+            self.game_over_text = " YOU WIN"
         # print("player1: ", self.player.health)
         # print("player2: ", self.player2.health)
 
