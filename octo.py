@@ -201,17 +201,14 @@ class Base_Game(arcade.View):
         # self.fps_counter.draw()
 
         self.wall_list.draw()
-        self.draw_health_bar(50, WINDOW_HEIGHT - 15, self.player.health)
+        self.draw_health_bar(0, WINDOW_HEIGHT - 30, self.player.health)
         self.player.draw()
 
         # self.fps_counter.end_frame()
 
     def draw_health_bar(self, x, y, health):
-        arcade.draw_rectangle_filled(x, y, 100, 30, arcade.color.RED)
-
-        arcade.draw_rectangle_filled(
-            x - (100 - health), y, health - (100 - health), 30, arcade.color.GREEN
-        )
+        arcade.draw_xywh_rectangle_filled(x, y, 100, 30, arcade.color.RED)
+        arcade.draw_xywh_rectangle_filled(x, y, health, 30, arcade.color.GREEN)
 
     def on_update(self, delta_time):
         self.fps_counter.start_update()
@@ -357,7 +354,9 @@ class Online_Game(Base_Game):
 
     def on_draw(self):
         super().on_draw()
-        self.draw_health_bar(WINDOW_WIDTH - 50, WINDOW_HEIGHT - 15, self.player2.health)
+        self.draw_health_bar(
+            WINDOW_WIDTH - 100, WINDOW_HEIGHT - 30, self.player2.health
+        )
         self.player2.draw()
 
 
